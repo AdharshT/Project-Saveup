@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { api } from "../api/client";
 import type { Income, MonthlyComparison, NextPaycheck, Subscription } from "../types";
+import { effectiveIncomeAmount } from "../utils/income";
 
 function monthlyEquivalent(amount: number, cycle: string): number {
   const factors: Record<string, number> = {
@@ -54,7 +55,7 @@ export default function Dashboard() {
 
   const monthlyIncomeTotal = incomes
     .filter((i) => i.active)
-    .reduce((sum, i) => sum + monthlyEquivalent(i.amount, i.frequency), 0);
+    .reduce((sum, i) => sum + monthlyEquivalent(effectiveIncomeAmount(i), i.frequency), 0);
 
   const chartData =
     comparison?.months.map((m) => ({ month: m.month, total: m.total })) ?? [];

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from ..dateutils import next_occurrence_on_or_after
+from ..dateutils import effective_income_amount, next_occurrence_on_or_after
 
 router = APIRouter(prefix="/incomes", tags=["incomes"])
 
@@ -60,7 +60,8 @@ def next_paychecks(db: Session = Depends(get_db)):
     results = []
     for income in incomes:
         next_date = next_occurrence_on_or_after(income.next_pay_date, today, income.frequency)
+        amount = effective_income_amount(income.amount, income.pay_type, income.hours_per_period)
         results.append(
-            schemas.NextPaycheck(source=income.source, amount=income.amount, date=next_date)
+            schemas.NextPaycheck(source=income.source, amount=amount, date=next_date)
         )
     return sorted(results, key=lambda r: r.date)

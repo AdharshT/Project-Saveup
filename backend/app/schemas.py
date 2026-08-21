@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 BillingCycle = Literal["weekly", "monthly", "quarterly", "yearly"]
 IncomeFrequency = Literal["weekly", "biweekly", "semimonthly", "monthly"]
+PayType = Literal["fixed", "hourly"]
 
 
 class SubscriptionBase(BaseModel):
@@ -41,6 +42,10 @@ class IncomeBase(BaseModel):
     source: str
     amount: float
     frequency: IncomeFrequency
+    pay_type: PayType = "fixed"
+    hours_per_period: Optional[float] = None
+    pay_period_start: Optional[date] = None
+    pay_period_end: Optional[date] = None
     next_pay_date: date
     active: bool = True
 
@@ -53,6 +58,10 @@ class IncomeUpdate(BaseModel):
     source: Optional[str] = None
     amount: Optional[float] = None
     frequency: Optional[IncomeFrequency] = None
+    pay_type: Optional[PayType] = None
+    hours_per_period: Optional[float] = None
+    pay_period_start: Optional[date] = None
+    pay_period_end: Optional[date] = None
     next_pay_date: Optional[date] = None
     active: Optional[bool] = None
 

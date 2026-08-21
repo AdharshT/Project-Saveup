@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from ..dateutils import monthly_equivalent
+from ..dateutils import effective_income_amount, monthly_equivalent
 
 router = APIRouter(prefix="/affordability", tags=["affordability"])
 
@@ -15,7 +15,10 @@ def check_affordability(payload: schemas.AffordabilityRequest, db: Session = Dep
     today = date.today()
 
     incomes = db.query(models.Income).filter(models.Income.active.is_(True)).all()
-    monthly_income = sum(monthly_equivalent(i.amount, i.frequency) for i in incomes)
+    monthly_income = sum(
+        monthly_equivalent(effective_income_amount(i.amount, i.pay_type, i.hours_per_period), i.frequency)
+        for i in incomes
+    )
 
     subscriptions = db.query(models.Subscription).filter(models.Subscription.active.is_(True)).all()
     monthly_subscription_cost = sum(

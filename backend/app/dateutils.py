@@ -28,6 +28,13 @@ def next_occurrence_on_or_after(start: date, reference: date, cycle: str) -> dat
     return occurrence
 
 
+def effective_income_amount(amount: float, pay_type: str, hours_per_period: float | None) -> float:
+    """Resolve an income's per-paycheck amount, converting hourly rate x hours to a dollar amount."""
+    if pay_type == "hourly":
+        return amount * (hours_per_period or 0)
+    return amount
+
+
 def monthly_equivalent(amount: float, cycle: str) -> float:
     """Normalize a recurring amount to an average monthly cost."""
     factors = {

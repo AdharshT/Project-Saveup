@@ -1,5 +1,6 @@
 export type BillingCycle = "weekly" | "monthly" | "quarterly" | "yearly";
 export type IncomeFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
+export type PayType = "fixed" | "hourly";
 
 export interface Subscription {
   id: number;
@@ -20,6 +21,10 @@ export interface Income {
   source: string;
   amount: number;
   frequency: IncomeFrequency;
+  pay_type: PayType;
+  hours_per_period: number | null;
+  pay_period_start: string | null;
+  pay_period_end: string | null;
   next_pay_date: string;
   active: boolean;
   created_at: string;

@@ -22,8 +22,12 @@ class Income(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     source = Column(String, nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Float, nullable=False)  # fixed: amount per paycheck; hourly: rate per hour
     frequency = Column(String, nullable=False)  # weekly | biweekly | semimonthly | monthly
+    pay_type = Column(String, nullable=False, default="fixed")  # fixed | hourly
+    hours_per_period = Column(Float, nullable=True)  # hours worked per pay period, hourly only
+    pay_period_start = Column(Date, nullable=True)  # descriptive only, hourly
+    pay_period_end = Column(Date, nullable=True)  # descriptive only, hourly
     next_pay_date = Column(Date, nullable=False)
     active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
