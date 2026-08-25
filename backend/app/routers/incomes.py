@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
+from ..auth import get_current_user
 from ..database import get_db
 from ..dateutils import effective_income_amount, next_occurrence_on_or_after
 
@@ -11,32 +12,50 @@ router = APIRouter(prefix="/incomes", tags=["incomes"])
 
 
 @router.get("", response_model=list[schemas.Income])
-def list_incomes(db: Session = Depends(get_db)):
-    return db.query(models.Income).order_by(models.Income.next_pay_date).all()
+def list_incomes(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    return (
+        db.query(models.Income)
+        .filter(models.Income.user_id == user.id)
+        .order_by(models.Income.next_pay_date)
+        .all()
+    )
 
 
 @router.post("", response_model=schemas.Income, status_code=201)
-def create_income(payload: schemas.IncomeCreate, db: Session = Depends(get_db)):
-    income = models.Income(**payload.model_dump())
+def create_income(
+    payload: schemas.IncomeCreate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    income = models.Income(**payload.model_dump(), user_id=user.id)
     db.add(income)
     db.commit()
     db.refresh(income)
     return income
 
 
-@router.get("/{income_id}", response_model=schemas.Income)
-def get_income(income_id: int, db: Session = Depends(get_db)):
+def _get_owned_income(income_id: int, db: Session, user: models.User):
     income = db.get(models.Income, income_id)
-    if not income:
+    if not income or income.user_id != user.id:
         raise HTTPException(status_code=404, detail="Income not found")
     return income
 
 
+@router.get("/{income_id}", response_model=schemas.Income)
+def get_income(
+    income_id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)
+):
+    return _get_owned_income(income_id, db, user)
+
+
 @router.put("/{income_id}", response_model=schemas.Income)
-def update_income(income_id: int, payload: schemas.IncomeUpdate, db: Session = Depends(get_db)):
-    income = db.get(models.Income, income_id)
-    if not income:
-        raise HTTPException(status_code=404, detail="Income not found")
+def update_income(
+    income_id: int,
+    payload: schemas.IncomeUpdate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    income = _get_owned_income(income_id, db, user)
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(income, field, value)
     db.commit()
@@ -45,18 +64,24 @@ def update_income(income_id: int, payload: schemas.IncomeUpdate, db: Session = D
 
 
 @router.delete("/{income_id}", status_code=204)
-def delete_income(income_id: int, db: Session = Depends(get_db)):
-    income = db.get(models.Income, income_id)
-    if not income:
-        raise HTTPException(status_code=404, detail="Income not found")
+def delete_income(
+    income_id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)
+):
+    income = _get_owned_income(income_id, db, user)
     db.delete(income)
     db.commit()
 
 
 @router.get("/upcoming/next", response_model=list[schemas.NextPaycheck])
-def next_paychecks(db: Session = Depends(get_db)):
+def next_paychecks(
+    db: Session = Depends(get_db), user: models.User = Depends(get_current_user)
+):
     today = date.today()
-    incomes = db.query(models.Income).filter(models.Income.active.is_(True)).all()
+    incomes = (
+        db.query(models.Income)
+        .filter(models.Income.user_id == user.id, models.Income.active.is_(True))
+        .all()
+    )
     results = []
     for income in incomes:
         next_date = next_occurrence_on_or_after(income.next_pay_date, today, income.frequency)

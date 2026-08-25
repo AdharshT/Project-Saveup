@@ -1,5 +1,3 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { getInitials } from "../auth/initials";
@@ -28,87 +26,27 @@ const FEATURES = [
   },
 ];
 
-interface FormValues {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
-type FormErrors = Partial<Record<keyof FormValues, string>>;
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validate(values: FormValues): FormErrors {
-  const errors: FormErrors = {};
-
-  if (!values.name.trim()) {
-    errors.name = "Name is required";
-  }
-
-  if (!values.email.trim()) {
-    errors.email = "Email is required";
-  } else if (!EMAIL_PATTERN.test(values.email)) {
-    errors.email = "Enter a valid email address";
-  }
-
-  if (!values.password) {
-    errors.password = "Password is required";
-  } else if (values.password.length < 8) {
-    errors.password = "Password must be at least 8 characters";
-  }
-
-  if (values.confirmPassword !== values.password) {
-    errors.confirmPassword = "Passwords do not match";
-  }
-
-  return errors;
-}
-
 export default function Home() {
   const navigate = useNavigate();
-  const { user, signUp } = useAuth();
-  const [values, setValues] = useState<FormValues>({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [errors, setErrors] = useState<FormErrors>({});
-
-  function handleChange(field: keyof FormValues, value: string) {
-    setValues((prev) => ({ ...prev, [field]: value }));
-  }
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    const nextErrors = validate(values);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0) {
-      signUp({ name: values.name.trim(), email: values.email.trim() });
-    }
-  }
-
-  function scrollToSignup() {
-    document.getElementById("signup")?.scrollIntoView({ behavior: "smooth" });
-  }
+  const { user } = useAuth();
 
   return (
-    <div className="landing">
-      <header className="landing-topbar">
-        <Link to="/" className="brand-link">
-          <img src={logo} alt="Saveup" className="brand-logo" />
-        </Link>
-        {user ? (
-          <button type="button" className="profile-btn" onClick={() => navigate("/profile")}>
-            <span className="avatar">{getInitials(user.name)}</span>
-            {user.name}
-          </button>
-        ) : (
-          <button type="button" onClick={scrollToSignup}>
-            Sign Up
-          </button>
-        )}
+  <div className="landing">
+    <header className="landing-topbar">
+      <Link to="/" className="brand-link">
+        <img src={logo} alt="Saveup" className="brand-logo" />
+      </Link>
+
+      {user ? (
+        <button
+          type="button"
+          className="profile-btn"
+          onClick={() => navigate("/profile")}
+        >
+          <span className="avatar">{getInitials(user.name)}</span>
+          {user.name}
+        </button>
+      ) : null}
       </header>
 
       <section className="hero">
@@ -129,67 +67,29 @@ export default function Home() {
         ))}
       </div>
 
-      <section className="signup-section" id="signup">
+      <section className="signup-section">
         <div className="card signup-card">
           {user ? (
             <div className="success-box">
               <h3>You're all set, {user.name.split(" ")[0]}!</h3>
-              <p className="muted">Signed up with {user.email}.</p>
+              <p className="muted">Signed in as {user.email}.</p>
               <button type="button" onClick={() => navigate("/dashboard")}>
                 Continue to Dashboard
               </button>
             </div>
           ) : (
-            <>
-              <h3>Sign up to get started</h3>
-              <form className="form-grid" onSubmit={handleSubmit} noValidate>
-                <label>
-                  Name
-                  <input
-                    type="text"
-                    value={values.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                  />
-                  {errors.name && <span className="error">{errors.name}</span>}
-                </label>
-                <label>
-                  Email
-                  <input
-                    type="email"
-                    value={values.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                  />
-                  {errors.email && <span className="error">{errors.email}</span>}
-                </label>
-                <div className="field-row">
-                  <label>
-                    Password
-                    <input
-                      type="password"
-                      value={values.password}
-                      onChange={(e) => handleChange("password", e.target.value)}
-                    />
-                    {errors.password && (
-                      <span className="error">{errors.password}</span>
-                    )}
-                  </label>
-                  <label>
-                    Confirm Password
-                    <input
-                      type="password"
-                      value={values.confirmPassword}
-                      onChange={(e) =>
-                        handleChange("confirmPassword", e.target.value)
-                      }
-                    />
-                    {errors.confirmPassword && (
-                      <span className="error">{errors.confirmPassword}</span>
-                    )}
-                  </label>
-                </div>
-                <button type="submit">Sign Up</button>
-              </form>
-            </>
+            <div className="success-box">
+              <h3>Ready to get a handle on your money?</h3>
+              <p className="muted">Create an account or log back in to pick up where you left off.</p>
+              <div className="cta-row">
+                <button type="button" onClick={() => navigate("/signup")}>
+                  Sign Up
+                </button>
+                <button type="button" className="ghost-btn" onClick={() => navigate("/login")}>
+                  Log In
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </section>

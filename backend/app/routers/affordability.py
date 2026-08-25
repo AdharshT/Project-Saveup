@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
+from ..auth import get_current_user
 from ..database import get_db
 from ..dateutils import effective_income_amount, monthly_equivalent
 
@@ -11,16 +12,28 @@ router = APIRouter(prefix="/affordability", tags=["affordability"])
 
 
 @router.post("/check", response_model=schemas.AffordabilityResponse)
-def check_affordability(payload: schemas.AffordabilityRequest, db: Session = Depends(get_db)):
+def check_affordability(
+    payload: schemas.AffordabilityRequest,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
     today = date.today()
 
-    incomes = db.query(models.Income).filter(models.Income.active.is_(True)).all()
+    incomes = (
+        db.query(models.Income)
+        .filter(models.Income.user_id == user.id, models.Income.active.is_(True))
+        .all()
+    )
     monthly_income = sum(
         monthly_equivalent(effective_income_amount(i.amount, i.pay_type, i.hours_per_period), i.frequency)
         for i in incomes
     )
 
-    subscriptions = db.query(models.Subscription).filter(models.Subscription.active.is_(True)).all()
+    subscriptions = (
+        db.query(models.Subscription)
+        .filter(models.Subscription.user_id == user.id, models.Subscription.active.is_(True))
+        .all()
+    )
     monthly_subscription_cost = sum(
         monthly_equivalent(s.amount, s.billing_cycle) for s in subscriptions
     )
@@ -28,6 +41,7 @@ def check_affordability(payload: schemas.AffordabilityRequest, db: Session = Dep
     spending_this_month = (
         db.query(models.Transaction)
         .filter(
+            models.Transaction.user_id == user.id,
             models.Transaction.date >= date(today.year, today.month, 1),
             models.Transaction.date <= today,
         )

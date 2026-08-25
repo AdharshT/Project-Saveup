@@ -1,5 +1,6 @@
 import type {
   AffordabilityResponse,
+  AuthResponse,
   Income,
   IncomeInput,
   MonthlyComparison,
@@ -8,24 +9,54 @@ import type {
   SubscriptionInput,
   Transaction,
   TransactionInput,
+  User,
 } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const TOKEN_KEY = "saveup.token";
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`${options?.method ?? "GET"} ${path} failed: ${res.status} ${body}`);
+    let detail = await res.text();
+    try {
+      detail = JSON.parse(detail).detail ?? detail;
+    } catch {
+      // response wasn't JSON; fall back to the raw text
+    }
+    throw new Error(detail || `${options?.method ?? "GET"} ${path} failed: ${res.status}`);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
 export const api = {
+  auth: {
+    signup: (data: { name: string; email: string; password: string }) =>
+      request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(data) }),
+    login: (data: { email: string; password: string }) =>
+      request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+    me: () => request<User>("/auth/me"),
+  },
   subscriptions: {
     list: () => request<Subscription[]>("/subscriptions"),
     create: (data: SubscriptionInput) =>

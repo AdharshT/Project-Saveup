@@ -9,6 +9,7 @@ A Rocket Money-style app for tracking subscriptions, paycheck income, monthly sp
 
 ## Features
 
+- **Accounts** — sign up or log in with an email and password; each account's data (income, subscriptions, spending) is private to that user.
 - **Subscriptions** — track recurring costs (weekly/monthly/quarterly/yearly), see total active monthly cost.
 - **Income** — add one or more income sources with a pay frequency, see the next upcoming paycheck(s).
 - **Spending** — log transactions by category and date, view month-over-month totals and a trend chart.
@@ -61,3 +62,4 @@ my-project/
 ## Notes
 
 - Requires Node.js 20.19+ or 22.12+ for Vite. Node 20.14 will run but prints a warning.
+- Auth tokens are signed with `SAVEUP_SECRET_KEY` (defaults to a dev-only value). Set a real secret via that env var before deploying anywhere beyond localhost.

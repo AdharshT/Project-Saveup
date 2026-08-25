@@ -1,4 +1,5 @@
-import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import type { ReactElement } from "react";
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import Dashboard from "./pages/Dashboard";
 import Subscriptions from "./pages/Subscriptions";
@@ -6,6 +7,8 @@ import IncomePage from "./pages/Income";
 import Spending from "./pages/Spending";
 import Affordability from "./pages/Affordability";
 import Home from "./pages/Home";
+import SignUp from "./pages/SignUp";
+import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import { useAuth } from "./auth/AuthContext";
 import { getInitials } from "./auth/initials";
@@ -19,17 +22,31 @@ const NAV_ITEMS = [
   { to: "/affordability", label: "Can I Afford This?" },
 ];
 
+function RequireAuth({ children }: { children: ReactElement }) {
+  const { user, ready } = useAuth();
+  const location = useLocation();
+  if (!ready) return null;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  return children;
+}
+
+const PUBLIC_PATHS = ["/", "/signup", "/login"];
+
 function App() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
 
-  if (location.pathname === "/") {
+  if (PUBLIC_PATHS.includes(location.pathname)) {
     return (
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     );
   }
+
+  if (!ready) return null;
 
   return (
     <div className="app-shell">
@@ -59,20 +76,20 @@ function App() {
               <span>{user.name}</span>
             </NavLink>
           ) : (
-            <NavLink to="/" className="nav-link">
-              Sign In
+            <NavLink to="/login" className="nav-link">
+              Log In
             </NavLink>
           )}
         </div>
       </aside>
       <main className="main-content">
         <Routes>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/subscriptions" element={<Subscriptions />} />
-          <Route path="/income" element={<IncomePage />} />
-          <Route path="/spending" element={<Spending />} />
-          <Route path="/affordability" element={<Affordability />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route path="/subscriptions" element={<RequireAuth><Subscriptions /></RequireAuth>} />
+          <Route path="/income" element={<RequireAuth><IncomePage /></RequireAuth>} />
+          <Route path="/spending" element={<RequireAuth><Spending /></RequireAuth>} />
+          <Route path="/affordability" element={<RequireAuth><Affordability /></RequireAuth>} />
+          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         </Routes>
       </main>
     </div>

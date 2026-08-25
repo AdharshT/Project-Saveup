@@ -1,3 +1,14 @@
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  user: User;
+}
+
 export type BillingCycle = "weekly" | "monthly" | "quarterly" | "yearly";
 export type IncomeFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
 export type PayType = "fixed" | "hourly";

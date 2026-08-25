@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Profile() {
-  const { user, updateEmail } = useAuth();
+  const { user, updateEmail, signOut } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState(user?.email ?? "");
   const [error, setError] = useState("");
@@ -36,6 +36,10 @@ export default function Profile() {
     setSaved(true);
   }
 
+  function handleLogOut() {
+    signOut();
+  }
+
   return (
     <div>
       <h1>Profile</h1>
@@ -61,6 +65,9 @@ export default function Profile() {
           {saved && <p className="muted">Email updated.</p>}
         </form>
       </div>
+      <button type="button" className="link-btn" style={{ marginTop: "1rem" }} onClick={handleLogOut}>
+        Log Out
+      </button>
     </div>
   );
 }

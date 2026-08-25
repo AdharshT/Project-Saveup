@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import models
 from .database import engine
-from .routers import affordability, incomes, subscriptions, summary, transactions
+from .routers import affordability, auth, incomes, subscriptions, summary, transactions
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -17,6 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(subscriptions.router)
 app.include_router(incomes.router)
 app.include_router(transactions.router)

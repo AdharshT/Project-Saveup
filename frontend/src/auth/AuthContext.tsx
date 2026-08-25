@@ -1,37 +1,52 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { api, clearToken, getToken, setToken } from "../api/client";
+import type { User } from "../types";
 
-export interface AuthUser {
-  name: string;
-  email: string;
-}
+export type AuthUser = User;
 
 interface AuthContextValue {
   user: AuthUser | null;
-  signUp: (user: AuthUser) => void;
+  ready: boolean;
+  signUp: (name: string, email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => void;
   updateEmail: (email: string) => void;
 }
-
-const STORAGE_KEY = "saveup.user";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as AuthUser) : null;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    if (!getToken()) {
+      setReady(true);
+      return;
     }
-  }, [user]);
+    api.auth
+      .me()
+      .then(setUser)
+      .catch(() => clearToken())
+      .finally(() => setReady(true));
+  }, []);
 
-  function signUp(newUser: AuthUser) {
-    setUser(newUser);
+  async function signUp(name: string, email: string, password: string) {
+    const res = await api.auth.signup({ name, email, password });
+    setToken(res.access_token);
+    setUser(res.user);
+  }
+
+  async function signIn(email: string, password: string) {
+    const res = await api.auth.login({ email, password });
+    setToken(res.access_token);
+    setUser(res.user);
+  }
+
+  function signOut() {
+    clearToken();
+    setUser(null);
   }
 
   function updateEmail(email: string) {
@@ -39,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, signUp, updateEmail }}>
+    <AuthContext.Provider value={{ user, ready, signUp, signIn, signOut, updateEmail }}>
       {children}
     </AuthContext.Provider>
   );

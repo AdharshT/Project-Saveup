@@ -1,12 +1,23 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, Float, Integer, String, func
+from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String, func
 
 from .database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True, index=True)
+    password_hash = Column(String, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
 
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
     billing_cycle = Column(String, nullable=False)  # weekly | monthly | quarterly | yearly
@@ -21,6 +32,7 @@ class Income(Base):
     __tablename__ = "incomes"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     source = Column(String, nullable=False)
     amount = Column(Float, nullable=False)  # fixed: amount per paycheck; hourly: rate per hour
     frequency = Column(String, nullable=False)  # weekly | biweekly | semimonthly | monthly
@@ -37,6 +49,7 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     description = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
     category = Column(String, nullable=True)

@@ -207,6 +207,61 @@ th {
   background: #d9ebe0;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ghost-btn {
+  background: none;
+  color: #2f7a4f;
+  border: 1px solid #cfe0d6;
+}
+
+.ghost-btn:hover {
+  background: #eaf3ee;
+}
+
+.ghost-btn-link {
+  display: inline-block;
+  background: none;
+  color: #2f7a4f;
+  border: 1px solid #cfe0d6;
+  padding: 0.55rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ghost-btn-link:hover {
+  background: #eaf3ee;
+}
+
+.signup-section-solo {
+  padding-top: 1rem;
+}
+
+.signup-card-lede {
+  margin-top: -0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.switch-mode {
+  margin: 0.9rem 0 0;
+  font-size: 0.85rem;
+  color: #6b7a71;
+  text-align: center;
+}
+
+.switch-mode .link-btn,
+.switch-mode a {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2f7a4f;
+}
+
 .hero {
   text-align: center;
   margin-bottom: 2.5rem;
@@ -248,4 +303,10 @@ th {
 
 .success-box button {
   margin-top: 0.5rem;
+}
+
+.cta-row {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
 }
