@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { BillingCycle, Subscription } from "../types";
+import { monthlyEquivalent } from "../utils/subscriptions";
 
 const HOUSING_CATEGORY = "Housing";
 const CYCLES: BillingCycle[] = ["weekly", "monthly", "quarterly", "yearly"];
@@ -9,14 +10,12 @@ const emptyForm = {
   name: "",
   amount: "",
   billing_cycle: "monthly" as BillingCycle,
-  category: "",
   next_billing_date: new Date().toISOString().slice(0, 10),
   active: true,
-  notes: "",
 };
 
-export default function Subscriptions() {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+export default function Rent() {
+  const [items, setItems] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +23,7 @@ export default function Subscriptions() {
   const load = () =>
     api.subscriptions
       .list()
-      .then((subs) => setSubscriptions(subs.filter((s) => s.category !== HOUSING_CATEGORY)));
+      .then((subs) => setItems(subs.filter((s) => s.category === HOUSING_CATEGORY)));
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -42,10 +41,10 @@ export default function Subscriptions() {
         name: form.name,
         amount: parseFloat(form.amount),
         billing_cycle: form.billing_cycle,
-        category: form.category || null,
+        category: HOUSING_CATEGORY,
         next_billing_date: form.next_billing_date,
         active: form.active,
-        notes: form.notes || null,
+        notes: null,
       });
       setForm(emptyForm);
       await load();
@@ -59,23 +58,38 @@ export default function Subscriptions() {
     await load();
   }
 
-  async function toggleActive(sub: Subscription) {
-    await api.subscriptions.update(sub.id, { active: !sub.active });
+  async function toggleActive(item: Subscription) {
+    await api.subscriptions.update(item.id, { active: !item.active });
     await load();
   }
 
-  if (loading) return <p>Loading subscriptions...</p>;
+  if (loading) return <p>Loading rent & utilities...</p>;
 
-  const activeTotal = subscriptions
-    .filter((s) => s.active)
-    .reduce((sum, s) => sum + s.amount, 0);
+  const monthlyTotal = items
+    .filter((i) => i.active)
+    .reduce((sum, i) => sum + monthlyEquivalent(i.amount, i.billing_cycle), 0);
 
   return (
     <div>
-      <h1>Subscriptions</h1>
+      <h1>Rent &amp; Utilities</h1>
+      <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
+        Rent and each utility or fee are entered the same way as any other recurring cost —
+        a name, an amount, and how often it's billed. Anything billed less often than monthly
+        (like a yearly renters insurance premium) is automatically averaged down to a monthly
+        figure so it fits alongside the rest.
+      </p>
 
-      <form className="card form-grid" onSubmit={handleSubmit}>
-        <h3>Add Subscription</h3>
+      <div className="card">
+        <h3>Total Monthly Housing Cost</h3>
+        <p className="stat">${monthlyTotal.toFixed(2)}</p>
+        <p className="muted">
+          {items.filter((i) => i.active).length} active item
+          {items.filter((i) => i.active).length === 1 ? "" : "s"}
+        </p>
+      </div>
+
+      <form className="card form-grid" onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
+        <h3>Add Rent or Utility</h3>
         {error && <p className="error">{error}</p>}
         <div className="field-row">
           <label>
@@ -83,7 +97,7 @@ export default function Subscriptions() {
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Netflix"
+              placeholder="Rent"
             />
           </label>
           <label>
@@ -93,7 +107,7 @@ export default function Subscriptions() {
               step="0.01"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
-              placeholder="15.99"
+              placeholder="1800.00"
             />
           </label>
           <label>
@@ -112,14 +126,6 @@ export default function Subscriptions() {
             </select>
           </label>
           <label>
-            Category
-            <input
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              placeholder="Streaming"
-            />
-          </label>
-          <label>
             Next Billing Date
             <input
               type="date"
@@ -128,52 +134,49 @@ export default function Subscriptions() {
             />
           </label>
         </div>
-        <button type="submit">Add Subscription</button>
+        <button type="submit">Add</button>
       </form>
 
       <div className="card" style={{ marginTop: "1rem" }}>
-        <div className="list-header">
-          <h3>All Subscriptions</h3>
-          <span className="muted">Active total: ${activeTotal.toFixed(2)}</span>
-        </div>
+        <h3>Rent &amp; Utilities</h3>
         <table>
           <thead>
             <tr>
               <th>Name</th>
               <th>Amount</th>
               <th>Cycle</th>
-              <th>Category</th>
+              <th>Monthly Equivalent</th>
               <th>Next Bill</th>
               <th>Active</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {subscriptions.map((s) => (
-              <tr key={s.id} className={s.active ? "" : "inactive-row"}>
-                <td>{s.name}</td>
-                <td>${s.amount.toFixed(2)}</td>
-                <td>{s.billing_cycle}</td>
-                <td>{s.category ?? "—"}</td>
-                <td>{s.next_billing_date}</td>
+            {items.map((i) => (
+              <tr key={i.id} className={i.active ? "" : "inactive-row"}>
+                <td>{i.name}</td>
+                <td>${i.amount.toFixed(2)}</td>
+                <td>{i.billing_cycle}</td>
+                <td>${monthlyEquivalent(i.amount, i.billing_cycle).toFixed(2)}</td>
+                <td>{i.next_billing_date}</td>
                 <td>
                   <input
                     type="checkbox"
-                    checked={s.active}
-                    onChange={() => toggleActive(s)}
+                    checked={i.active}
+                    onChange={() => toggleActive(i)}
                   />
                 </td>
                 <td>
-                  <button className="link-btn" onClick={() => handleDelete(s.id)}>
+                  <button className="link-btn" onClick={() => handleDelete(i.id)}>
                     Delete
                   </button>
                 </td>
               </tr>
             ))}
-            {subscriptions.length === 0 && (
+            {items.length === 0 && (
               <tr>
                 <td colSpan={7} className="muted">
-                  No subscriptions yet.
+                  No rent or utilities added yet.
                 </td>
               </tr>
             )}

@@ -3,6 +3,7 @@ import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-route
 import "./App.css";
 import Dashboard from "./pages/Dashboard";
 import Subscriptions from "./pages/Subscriptions";
+import Rent from "./pages/Rent";
 import IncomePage from "./pages/Income";
 import Spending from "./pages/Spending";
 import Affordability from "./pages/Affordability";
@@ -17,6 +18,7 @@ import logo from "./assets/logo-on-dark.png";
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", end: true },
   { to: "/subscriptions", label: "Subscriptions" },
+  { to: "/rent", label: "Rent & Utilities" },
   { to: "/income", label: "Income" },
   { to: "/spending", label: "Spending" },
   { to: "/affordability", label: "Can I Afford This?" },
@@ -86,6 +88,7 @@ function App() {
         <Routes>
           <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
           <Route path="/subscriptions" element={<RequireAuth><Subscriptions /></RequireAuth>} />
+          <Route path="/rent" element={<RequireAuth><Rent /></RequireAuth>} />
           <Route path="/income" element={<RequireAuth><IncomePage /></RequireAuth>} />
           <Route path="/spending" element={<RequireAuth><Spending /></RequireAuth>} />
           <Route path="/affordability" element={<RequireAuth><Affordability /></RequireAuth>} />

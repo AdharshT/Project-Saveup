@@ -32,6 +32,47 @@ h3 {
   gap: 1rem;
 }
 
+.summary-card.clickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.summary-card.clickable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card.clickable:focus-visible {
+  outline: 2px solid #2f7a4f;
+  outline-offset: 2px;
+}
+
+.card-expand-hint {
+  color: #2f7a4f;
+  font-weight: 600;
+}
+
+.card-breakdown {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef1ef;
+  gap: 0.55rem;
+}
+
+.card-breakdown li {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.card-breakdown li span:first-child {
+  color: #16241c;
+  font-weight: 500;
+}
+
+.card-breakdown li span:last-child {
+  color: #6b7a71;
+}
+
 .stat {
   font-size: 1.8rem;
   font-weight: 700;

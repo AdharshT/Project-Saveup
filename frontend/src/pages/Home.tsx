@@ -9,21 +9,31 @@ const FEATURES = [
     description:
       "Track every recurring cost — weekly, monthly, quarterly, or yearly — and see your total active monthly spend at a glance.",
   },
+  
+  {
+    title: "Rent and Utilites",
+    description:
+    "Tracks total monthly housing costs — rent plus utilities and other recurring fees — normalized into one accurate monthly number.",
+  },
+  
   {
     title: "Income",
     description:
       "Add one or more income sources with a pay frequency and always know when your next paycheck lands.",
   },
+  
   {
     title: "Spending",
     description:
       "Log transactions by category and date, then track month-over-month totals with a trend chart.",
   },
+  
   {
     title: "Can I Afford This?",
     description:
       "Check whether a purchase fits your discretionary budget — income minus subscriptions minus what you've already spent this month.",
   },
+
 ];
 
 export default function Home() {
