@@ -32,6 +32,31 @@ h3 {
   gap: 1rem;
 }
 
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-header h1 {
+  margin-bottom: 0;
+}
+
+.account-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #445048;
+}
+
+.account-select select {
+  width: auto;
+}
+
 .summary-card.clickable {
   cursor: pointer;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
@@ -49,6 +74,14 @@ h3 {
 .card-expand-hint {
   color: #2f7a4f;
   font-weight: 600;
+}
+
+.card-expand-summary {
+  margin: 0.6rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid #eef1ef;
+  font-size: 0.9rem;
+  color: #16241c;
 }
 
 .card-breakdown {
@@ -160,6 +193,11 @@ button:disabled {
   font-weight: 500;
 }
 
+.link-btn-edit {
+  color: #2f7a4f;
+  margin-right: 0.75rem;
+}
+
 .link-btn:hover {
   background: none;
   text-decoration: underline;
@@ -208,6 +246,11 @@ th {
 
 .error {
   color: #c0392b;
+  font-size: 0.85rem;
+}
+
+.success {
+  color: #2f7a4f;
   font-size: 0.85rem;
 }
 

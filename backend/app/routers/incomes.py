@@ -11,6 +11,12 @@ from ..dateutils import effective_income_amount, next_occurrence_on_or_after
 router = APIRouter(prefix="/incomes", tags=["incomes"])
 
 
+def _ensure_account_owned(account_id: int, db: Session, user: models.User):
+    account = db.get(models.Account, account_id)
+    if not account or account.user_id != user.id:
+        raise HTTPException(status_code=400, detail="Account not found")
+
+
 @router.get("", response_model=list[schemas.Income])
 def list_incomes(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     return (
@@ -27,6 +33,7 @@ def create_income(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
+    _ensure_account_owned(payload.account_id, db, user)
     income = models.Income(**payload.model_dump(), user_id=user.id)
     db.add(income)
     db.commit()
@@ -56,6 +63,8 @@ def update_income(
     user: models.User = Depends(get_current_user),
 ):
     income = _get_owned_income(income_id, db, user)
+    if payload.account_id is not None:
+        _ensure_account_owned(payload.account_id, db, user)
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(income, field, value)
     db.commit()
@@ -87,6 +96,8 @@ def next_paychecks(
         next_date = next_occurrence_on_or_after(income.next_pay_date, today, income.frequency)
         amount = effective_income_amount(income.amount, income.pay_type, income.hours_per_period)
         results.append(
-            schemas.NextPaycheck(source=income.source, amount=amount, date=next_date)
+            schemas.NextPaycheck(
+                account_id=income.account_id, source=income.source, amount=amount, date=next_date
+            )
         )
     return sorted(results, key=lambda r: r.date)

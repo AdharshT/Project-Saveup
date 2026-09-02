@@ -1,15 +1,25 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
-import type { BillingCycle, Subscription } from "../types";
+import type { Account, BillingCycle, Subscription } from "../types";
+import { capitalize } from "../utils/format";
 
 const HOUSING_CATEGORY = "Housing";
 const CYCLES: BillingCycle[] = ["weekly", "monthly", "quarterly", "yearly"];
 
+const SUBSCRIPTION_CATEGORIES = [
+  { group: "Streaming & Media", options: ["Video", "Music", "Gaming"] },
+  { group: "Productivity", options: ["Software & Apps", "Cloud Storage"] },
+  { group: "Health & Fitness", options: ["Gym/Fitness", "Wellness"] },
+  { group: "News & Learning", options: ["News & Media", "Education"] },
+  { group: "Other", options: ["Shopping", "Utilities", "Miscellaneous"] },
+] as const;
+
 const emptyForm = {
+  account_id: "",
   name: "",
   amount: "",
   billing_cycle: "monthly" as BillingCycle,
-  category: "",
+  category: SUBSCRIPTION_CATEGORIES[0].options[0] as string,
   next_billing_date: new Date().toISOString().slice(0, 10),
   active: true,
   notes: "",
@@ -17,14 +27,22 @@ const emptyForm = {
 
 export default function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const load = () =>
-    api.subscriptions
-      .list()
-      .then((subs) => setSubscriptions(subs.filter((s) => s.category !== HOUSING_CATEGORY)));
+    Promise.all([api.subscriptions.list(), api.accounts.list()]).then(([subs, accts]) => {
+      setSubscriptions(subs.filter((s) => s.category !== HOUSING_CATEGORY));
+      setAccounts(accts);
+      setForm((prev) =>
+        prev.account_id || accts.length === 0
+          ? prev
+          : { ...prev, account_id: accts[0].id.toString() },
+      );
+    });
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -37,16 +55,27 @@ export default function Subscriptions() {
       setError("Name and amount are required.");
       return;
     }
+    if (!form.account_id) {
+      setError("Add an account first.");
+      return;
+    }
+    const payload = {
+      account_id: parseInt(form.account_id, 10),
+      name: form.name,
+      amount: parseFloat(form.amount),
+      billing_cycle: form.billing_cycle,
+      category: form.category,
+      next_billing_date: form.next_billing_date,
+      active: form.active,
+      notes: form.notes || null,
+    };
     try {
-      await api.subscriptions.create({
-        name: form.name,
-        amount: parseFloat(form.amount),
-        billing_cycle: form.billing_cycle,
-        category: form.category || null,
-        next_billing_date: form.next_billing_date,
-        active: form.active,
-        notes: form.notes || null,
-      });
+      if (editingId !== null) {
+        await api.subscriptions.update(editingId, payload);
+        setEditingId(null);
+      } else {
+        await api.subscriptions.create(payload);
+      }
       setForm(emptyForm);
       await load();
     } catch (err) {
@@ -54,7 +83,29 @@ export default function Subscriptions() {
     }
   }
 
+  function handleEdit(sub: Subscription) {
+    setEditingId(sub.id);
+    setError(null);
+    setForm({
+      account_id: sub.account_id.toString(),
+      name: sub.name,
+      amount: sub.amount.toString(),
+      billing_cycle: sub.billing_cycle,
+      category: sub.category ?? SUBSCRIPTION_CATEGORIES[0].options[0],
+      next_billing_date: sub.next_billing_date,
+      active: sub.active,
+      notes: sub.notes ?? "",
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setError(null);
+    setForm(emptyForm);
+  }
+
   async function handleDelete(id: number) {
+    if (id === editingId) handleCancelEdit();
     await api.subscriptions.remove(id);
     await load();
   }
@@ -75,9 +126,27 @@ export default function Subscriptions() {
       <h1>Subscriptions</h1>
 
       <form className="card form-grid" onSubmit={handleSubmit}>
-        <h3>Add Subscription</h3>
+        <h3>{editingId !== null ? "Edit Subscription" : "Add Subscription"}</h3>
         {error && <p className="error">{error}</p>}
+        {accounts.length === 0 && (
+          <p className="muted">
+            Add an account on the Accounts page before adding subscriptions.
+          </p>
+        )}
         <div className="field-row">
+          <label>
+            Account
+            <select
+              value={form.account_id}
+              onChange={(e) => setForm({ ...form, account_id: e.target.value })}
+            >
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nickname}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             Name
             <input
@@ -106,18 +175,27 @@ export default function Subscriptions() {
             >
               {CYCLES.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {capitalize(c)}
                 </option>
               ))}
             </select>
           </label>
           <label>
             Category
-            <input
+            <select
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
-              placeholder="Streaming"
-            />
+            >
+              {SUBSCRIPTION_CATEGORIES.map((g) => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.options.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </label>
           <label>
             Next Billing Date
@@ -128,7 +206,16 @@ export default function Subscriptions() {
             />
           </label>
         </div>
-        <button type="submit">Add Subscription</button>
+        <div className="field-row">
+          <button type="submit">
+            {editingId !== null ? "Save Changes" : "Add Subscription"}
+          </button>
+          {editingId !== null && (
+            <button type="button" className="ghost-btn" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <div className="card" style={{ marginTop: "1rem" }}>
@@ -139,6 +226,7 @@ export default function Subscriptions() {
         <table>
           <thead>
             <tr>
+              <th>Account</th>
               <th>Name</th>
               <th>Amount</th>
               <th>Cycle</th>
@@ -151,9 +239,10 @@ export default function Subscriptions() {
           <tbody>
             {subscriptions.map((s) => (
               <tr key={s.id} className={s.active ? "" : "inactive-row"}>
+                <td>{accounts.find((a) => a.id === s.account_id)?.nickname ?? "—"}</td>
                 <td>{s.name}</td>
                 <td>${s.amount.toFixed(2)}</td>
-                <td>{s.billing_cycle}</td>
+                <td>{capitalize(s.billing_cycle)}</td>
                 <td>{s.category ?? "—"}</td>
                 <td>{s.next_billing_date}</td>
                 <td>
@@ -164,6 +253,9 @@ export default function Subscriptions() {
                   />
                 </td>
                 <td>
+                  <button className="link-btn link-btn-edit" onClick={() => handleEdit(s)}>
+                    Edit
+                  </button>
                   <button className="link-btn" onClick={() => handleDelete(s.id)}>
                     Delete
                   </button>
@@ -172,7 +264,7 @@ export default function Subscriptions() {
             ))}
             {subscriptions.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={8} className="muted">
                   No subscriptions yet.
                 </td>
               </tr>

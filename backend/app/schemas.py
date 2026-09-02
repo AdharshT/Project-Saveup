@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, date as date_type, datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 BillingCycle = Literal["weekly", "monthly", "quarterly", "yearly"]
 IncomeFrequency = Literal["weekly", "biweekly", "semimonthly", "monthly"]
 PayType = Literal["fixed", "hourly"]
+AccountType = Literal["checking", "savings", "credit"]
 
 
 class UserCreate(BaseModel):
@@ -17,6 +18,11 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+
+class PasswordReset(BaseModel):
+    email: str
+    new_password: str
 
 
 class User(BaseModel):
@@ -31,7 +37,52 @@ class AuthResponse(BaseModel):
     user: User
 
 
+class BankBase(BaseModel):
+    name: str
+
+
+class BankCreate(BankBase):
+    pass
+
+
+class BankUpdate(BaseModel):
+    name: Optional[str] = None
+
+
+class Bank(BankBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: datetime
+
+
+class AccountBase(BaseModel):
+    bank_id: int
+    nickname: str
+    type: Optional[AccountType] = None
+    last4: Optional[str] = None
+    balance: float = 0.0
+
+
+class AccountCreate(AccountBase):
+    pass
+
+
+class AccountUpdate(BaseModel):
+    bank_id: Optional[int] = None
+    nickname: Optional[str] = None
+    type: Optional[AccountType] = None
+    last4: Optional[str] = None
+    balance: Optional[float] = None
+
+
+class Account(AccountBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: datetime
+
+
 class SubscriptionBase(BaseModel):
+    account_id: int
     name: str
     amount: float
     billing_cycle: BillingCycle
@@ -46,6 +97,7 @@ class SubscriptionCreate(SubscriptionBase):
 
 
 class SubscriptionUpdate(BaseModel):
+    account_id: Optional[int] = None
     name: Optional[str] = None
     amount: Optional[float] = None
     billing_cycle: Optional[BillingCycle] = None
@@ -62,6 +114,7 @@ class Subscription(SubscriptionBase):
 
 
 class IncomeBase(BaseModel):
+    account_id: int
     source: str
     amount: float
     frequency: IncomeFrequency
@@ -78,6 +131,7 @@ class IncomeCreate(IncomeBase):
 
 
 class IncomeUpdate(BaseModel):
+    account_id: Optional[int] = None
     source: Optional[str] = None
     amount: Optional[float] = None
     frequency: Optional[IncomeFrequency] = None
@@ -96,6 +150,7 @@ class Income(IncomeBase):
 
 
 class TransactionBase(BaseModel):
+    account_id: int
     description: str
     amount: float
     category: Optional[str] = None
@@ -107,10 +162,11 @@ class TransactionCreate(TransactionBase):
 
 
 class TransactionUpdate(BaseModel):
+    account_id: Optional[int] = None
     description: Optional[str] = None
     amount: Optional[float] = None
     category: Optional[str] = None
-    date: Optional[date] = None
+    date: Optional[date_type] = None
 
 
 class Transaction(TransactionBase):
@@ -130,6 +186,7 @@ class MonthlyComparison(BaseModel):
 
 
 class NextPaycheck(BaseModel):
+    account_id: int
     source: str
     amount: float
     date: date

@@ -2,6 +2,8 @@ from collections import defaultdict
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -15,17 +17,19 @@ router = APIRouter(prefix="/summary", tags=["summary"])
 @router.get("/monthly", response_model=schemas.MonthlyComparison)
 def monthly_comparison(
     months: int = Query(default=6, ge=1, le=24),
+    account_id: Optional[int] = Query(default=None),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
     today = date.today()
     start_month = date(today.year, today.month, 1) - relativedelta(months=months - 1)
 
-    transactions = (
-        db.query(models.Transaction)
-        .filter(models.Transaction.user_id == user.id, models.Transaction.date >= start_month)
-        .all()
+    query = db.query(models.Transaction).filter(
+        models.Transaction.user_id == user.id, models.Transaction.date >= start_month
     )
+    if account_id is not None:
+        query = query.filter(models.Transaction.account_id == account_id)
+    transactions = query.all()
 
     totals: dict[str, float] = defaultdict(float)
     by_category: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))

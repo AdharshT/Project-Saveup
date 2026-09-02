@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import Dashboard from "./pages/Dashboard";
+import Accounts from "./pages/Accounts";
 import Subscriptions from "./pages/Subscriptions";
 import Rent from "./pages/Rent";
 import IncomePage from "./pages/Income";
@@ -10,6 +11,7 @@ import Affordability from "./pages/Affordability";
 import Home from "./pages/Home";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
 import Profile from "./pages/Profile";
 import { useAuth } from "./auth/AuthContext";
 import { getInitials } from "./auth/initials";
@@ -17,6 +19,7 @@ import logo from "./assets/logo-on-dark.png";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", end: true },
+  { to: "/accounts", label: "Accounts" },
   { to: "/subscriptions", label: "Subscriptions" },
   { to: "/rent", label: "Rent & Utilities" },
   { to: "/income", label: "Income" },
@@ -32,7 +35,7 @@ function RequireAuth({ children }: { children: ReactElement }) {
   return children;
 }
 
-const PUBLIC_PATHS = ["/", "/signup", "/login"];
+const PUBLIC_PATHS = ["/", "/signup", "/login", "/forgot-password"];
 
 function App() {
   const location = useLocation();
@@ -44,6 +47,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     );
   }
@@ -87,6 +91,7 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route path="/accounts" element={<RequireAuth><Accounts /></RequireAuth>} />
           <Route path="/subscriptions" element={<RequireAuth><Subscriptions /></RequireAuth>} />
           <Route path="/rent" element={<RequireAuth><Rent /></RequireAuth>} />
           <Route path="/income" element={<RequireAuth><IncomePage /></RequireAuth>} />

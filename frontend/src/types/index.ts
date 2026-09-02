@@ -13,8 +13,31 @@ export type BillingCycle = "weekly" | "monthly" | "quarterly" | "yearly";
 export type IncomeFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
 export type PayType = "fixed" | "hourly";
 
+export interface Bank {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+export type BankInput = Omit<Bank, "id" | "created_at">;
+
+export type AccountType = "checking" | "savings" | "credit";
+
+export interface Account {
+  id: number;
+  bank_id: number;
+  nickname: string;
+  type: AccountType | null;
+  last4: string | null;
+  balance: number;
+  created_at: string;
+}
+
+export type AccountInput = Omit<Account, "id" | "created_at">;
+
 export interface Subscription {
   id: number;
+  account_id: number;
   name: string;
   amount: number;
   billing_cycle: BillingCycle;
@@ -29,6 +52,7 @@ export type SubscriptionInput = Omit<Subscription, "id" | "created_at">;
 
 export interface Income {
   id: number;
+  account_id: number;
   source: string;
   amount: number;
   frequency: IncomeFrequency;
@@ -45,6 +69,7 @@ export type IncomeInput = Omit<Income, "id" | "created_at">;
 
 export interface Transaction {
   id: number;
+  account_id: number;
   description: string;
   amount: number;
   category: string | null;
@@ -55,6 +80,7 @@ export interface Transaction {
 export type TransactionInput = Omit<Transaction, "id" | "created_at">;
 
 export interface NextPaycheck {
+  account_id: number;
   source: string;
   amount: number;
   date: string;

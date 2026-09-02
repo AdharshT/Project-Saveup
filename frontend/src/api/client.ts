@@ -1,6 +1,10 @@
 import type {
+  Account,
+  AccountInput,
   AffordabilityResponse,
   AuthResponse,
+  Bank,
+  BankInput,
   Income,
   IncomeInput,
   MonthlyComparison,
@@ -55,7 +59,25 @@ export const api = {
       request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(data) }),
     login: (data: { email: string; password: string }) =>
       request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+    resetPassword: (data: { email: string; new_password: string }) =>
+      request<void>("/auth/reset-password", { method: "POST", body: JSON.stringify(data) }),
     me: () => request<User>("/auth/me"),
+  },
+  banks: {
+    list: () => request<Bank[]>("/banks"),
+    create: (data: BankInput) =>
+      request<Bank>("/banks", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: Partial<BankInput>) =>
+      request<Bank>(`/banks/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: number) => request<void>(`/banks/${id}`, { method: "DELETE" }),
+  },
+  accounts: {
+    list: () => request<Account[]>("/accounts"),
+    create: (data: AccountInput) =>
+      request<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: Partial<AccountInput>) =>
+      request<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: number) => request<void>(`/accounts/${id}`, { method: "DELETE" }),
   },
   subscriptions: {
     list: () => request<Subscription[]>("/subscriptions"),
@@ -89,8 +111,10 @@ export const api = {
     remove: (id: number) => request<void>(`/transactions/${id}`, { method: "DELETE" }),
   },
   summary: {
-    monthly: (months = 6) =>
-      request<MonthlyComparison>(`/summary/monthly?months=${months}`),
+    monthly: (months = 6, accountId?: number) =>
+      request<MonthlyComparison>(
+        `/summary/monthly?months=${months}${accountId ? `&account_id=${accountId}` : ""}`,
+      ),
   },
   affordability: {
     check: (item_name: string, price: number) =>

@@ -9,9 +9,16 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "../api/client";
-import type { Income, MonthlyComparison, NextPaycheck, Subscription, Transaction } from "../types";
+import type {
+  Account,
+  Income,
+  MonthlyComparison,
+  NextPaycheck,
+  Subscription,
+  Transaction,
+} from "../types";
 import { effectiveIncomeAmount } from "../utils/income";
-import { monthlyEquivalent } from "../utils/subscriptions";
+import { amountDueInMonth, monthlyEquivalent } from "../utils/subscriptions";
 
 interface BreakdownItem {
   key: string | number;
@@ -27,10 +34,20 @@ interface SummaryCardProps {
   items: BreakdownItem[];
   expanded: boolean;
   onToggle: () => void;
+  expandedSummary?: React.ReactNode;
 }
 
-function SummaryCard({ title, stat, subtext, emptyText, items, expanded, onToggle }: SummaryCardProps) {
-  const clickable = items.length > 1;
+function SummaryCard({
+  title,
+  stat,
+  subtext,
+  emptyText,
+  items,
+  expanded,
+  onToggle,
+  expandedSummary,
+}: SummaryCardProps) {
+  const clickable = items.length > 0;
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
@@ -57,6 +74,7 @@ function SummaryCard({ title, stat, subtext, emptyText, items, expanded, onToggl
           {items.length} active — {expanded ? "hide" : "view all"}
         </p>
       )}
+      {clickable && expanded && expandedSummary}
       {clickable && expanded && (
         <ul className="plain-list card-breakdown">
           {items.map((item) => (
@@ -76,9 +94,12 @@ export default function Dashboard() {
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [nextPaychecks, setNextPaychecks] = useState<NextPaycheck[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [comparison, setComparison] = useState<MonthlyComparison | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [expanded, setExpanded] = useState({
+    balance: false,
     income: false,
     subscriptions: false,
     spending: false,
@@ -91,17 +112,22 @@ export default function Dashboard() {
       api.incomes.list(),
       api.incomes.next(),
       api.transactions.list(),
-      api.summary.monthly(6),
+      api.accounts.list(),
     ])
-      .then(([subs, inc, next, txns, monthly]) => {
+      .then(([subs, inc, next, txns, accts]) => {
         setSubscriptions(subs);
         setIncomes(inc);
         setNextPaychecks(next);
         setTransactions(txns);
-        setComparison(monthly);
+        setAccounts(accts);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const accountId = selectedAccountId === "all" ? undefined : selectedAccountId;
+    api.summary.monthly(6, accountId).then(setComparison);
+  }, [selectedAccountId]);
 
   if (loading) return <p>Loading dashboard...</p>;
 
@@ -109,7 +135,31 @@ export default function Dashboard() {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const activeIncomes = incomes.filter((i) => i.active);
+  const scopedSubscriptions =
+    selectedAccountId === "all"
+      ? subscriptions
+      : subscriptions.filter((s) => s.account_id === selectedAccountId);
+  const scopedIncomes =
+    selectedAccountId === "all" ? incomes : incomes.filter((i) => i.account_id === selectedAccountId);
+  const scopedTransactions =
+    selectedAccountId === "all"
+      ? transactions
+      : transactions.filter((t) => t.account_id === selectedAccountId);
+  const scopedNextPaychecks =
+    selectedAccountId === "all"
+      ? nextPaychecks
+      : nextPaychecks.filter((p) => p.account_id === selectedAccountId);
+
+  const selectedAccount =
+    selectedAccountId === "all" ? null : accounts.find((a) => a.id === selectedAccountId) ?? null;
+  const balanceTotal = selectedAccount
+    ? selectedAccount.balance
+    : accounts.reduce((sum, a) => sum + a.balance, 0);
+  const accountItems: BreakdownItem[] = selectedAccount
+    ? []
+    : accounts.map((a) => ({ key: a.id, label: a.nickname, value: `$${a.balance.toFixed(2)}` }));
+
+  const activeIncomes = scopedIncomes.filter((i) => i.active);
   const monthlyIncomeTotal = activeIncomes.reduce(
     (sum, i) => sum + monthlyEquivalent(effectiveIncomeAmount(i), i.frequency),
     0,
@@ -120,27 +170,32 @@ export default function Dashboard() {
     value: `$${monthlyEquivalent(effectiveIncomeAmount(i), i.frequency).toFixed(2)}/mo`,
   }));
 
-  const activeSubscriptions = subscriptions.filter((s) => s.active);
-  const monthlySubscriptionTotal = activeSubscriptions.reduce(
-    (sum, s) => sum + monthlyEquivalent(s.amount, s.billing_cycle),
-    0,
-  );
-  const subscriptionItems: BreakdownItem[] = activeSubscriptions.map((s) => ({
-    key: s.id,
-    label: s.name,
-    value: `$${monthlyEquivalent(s.amount, s.billing_cycle).toFixed(2)}/mo`,
-  }));
-
   const chartData =
     comparison?.months.map((m) => ({ month: m.month, total: m.total })) ?? [];
 
   const thisMonth = comparison?.months.at(-1);
   const lastMonth = comparison?.months.at(-2);
+  const currentMonthStr = thisMonth?.month ?? new Date().toISOString().slice(0, 7);
+
+  const activeSubscriptions = scopedSubscriptions.filter((s) => s.active);
+  const monthlySubscriptionTotal = activeSubscriptions.reduce(
+    (sum, s) => sum + monthlyEquivalent(s.amount, s.billing_cycle),
+    0,
+  );
+  const dueThisMonthTotal = activeSubscriptions.reduce(
+    (sum, s) => sum + amountDueInMonth(s.amount, s.billing_cycle, s.next_billing_date, currentMonthStr),
+    0,
+  );
+  const subscriptionItems: BreakdownItem[] = activeSubscriptions.map((s) => ({
+    key: s.id,
+    label: s.name,
+    value: `$${s.amount.toFixed(2)} ${s.billing_cycle} · next bill ${s.next_billing_date}`,
+  }));
   const spendDelta =
     thisMonth && lastMonth ? thisMonth.total - lastMonth.total : null;
 
   const thisMonthTransactions = thisMonth
-    ? transactions.filter((t) => t.date.slice(0, 7) === thisMonth.month)
+    ? scopedTransactions.filter((t) => t.date.slice(0, 7) === thisMonth.month)
     : [];
   const spendingItems: BreakdownItem[] = thisMonthTransactions.map((t) => ({
     key: t.id,
@@ -148,7 +203,7 @@ export default function Dashboard() {
     value: `$${t.amount.toFixed(2)} on ${t.date}`,
   }));
 
-  const paycheckItems: BreakdownItem[] = nextPaychecks.map((p, idx) => ({
+  const paycheckItems: BreakdownItem[] = scopedNextPaychecks.map((p, idx) => ({
     key: idx,
     label: p.source,
     value: `$${p.amount.toFixed(2)} on ${p.date}`,
@@ -156,8 +211,40 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      <div className="dashboard-header">
+        <h1>Dashboard</h1>
+        {accounts.length > 0 && (
+          <label className="account-select">
+            Account
+            <select
+              value={selectedAccountId}
+              onChange={(e) =>
+                setSelectedAccountId(e.target.value === "all" ? "all" : Number(e.target.value))
+              }
+            >
+              <option value="all">All Accounts</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nickname}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+      {accounts.length === 0 && (
+        <p className="muted" style={{ marginTop: "-0.75rem", marginBottom: "1.25rem" }}>
+          Add a bank account on the Accounts page to start tracking balances per account.
+        </p>
+      )}
       <div className="card-grid">
+        <SummaryCard
+          title={selectedAccount ? `${selectedAccount.nickname} Balance` : "Total Balance"}
+          stat={`$${balanceTotal.toFixed(2)}`}
+          items={accountItems}
+          expanded={expanded.balance}
+          onToggle={() => toggle("balance")}
+        />
         <SummaryCard
           title="Monthly Income"
           stat={`$${monthlyIncomeTotal.toFixed(2)}`}
@@ -169,13 +256,16 @@ export default function Dashboard() {
           title="Monthly Subscriptions"
           stat={`$${monthlySubscriptionTotal.toFixed(2)}`}
           subtext={
-            activeSubscriptions.length <= 1 ? (
-              <p className="muted">{activeSubscriptions.length} active</p>
-            ) : undefined
+            activeSubscriptions.length === 0 ? <p className="muted">0 active</p> : undefined
           }
           items={subscriptionItems}
           expanded={expanded.subscriptions}
           onToggle={() => toggle("subscriptions")}
+          expandedSummary={
+            <p className="card-expand-summary">
+              Billed this month: <strong>${dueThisMonthTotal.toFixed(2)}</strong>
+            </p>
+          }
         />
         <SummaryCard
           title="Spending This Month"
@@ -194,14 +284,7 @@ export default function Dashboard() {
         />
         <SummaryCard
           title="Next Paycheck"
-          stat={nextPaychecks[0] ? `$${nextPaychecks[0].amount.toFixed(2)}` : "—"}
-          subtext={
-            nextPaychecks[0] && nextPaychecks.length <= 1 ? (
-              <p className="muted">
-                {nextPaychecks[0].source} on {nextPaychecks[0].date}
-              </p>
-            ) : undefined
-          }
+          stat={scopedNextPaychecks[0] ? `$${scopedNextPaychecks[0].amount.toFixed(2)}` : "—"}
           emptyText="No income sources yet"
           items={paycheckItems}
           expanded={expanded.paycheck}

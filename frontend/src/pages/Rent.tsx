@@ -1,12 +1,14 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
-import type { BillingCycle, Subscription } from "../types";
+import type { Account, BillingCycle, Subscription } from "../types";
+import { capitalize } from "../utils/format";
 import { monthlyEquivalent } from "../utils/subscriptions";
 
 const HOUSING_CATEGORY = "Housing";
 const CYCLES: BillingCycle[] = ["weekly", "monthly", "quarterly", "yearly"];
 
 const emptyForm = {
+  account_id: "",
   name: "",
   amount: "",
   billing_cycle: "monthly" as BillingCycle,
@@ -16,14 +18,22 @@ const emptyForm = {
 
 export default function Rent() {
   const [items, setItems] = useState<Subscription[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const load = () =>
-    api.subscriptions
-      .list()
-      .then((subs) => setItems(subs.filter((s) => s.category === HOUSING_CATEGORY)));
+    Promise.all([api.subscriptions.list(), api.accounts.list()]).then(([subs, accts]) => {
+      setItems(subs.filter((s) => s.category === HOUSING_CATEGORY));
+      setAccounts(accts);
+      setForm((prev) =>
+        prev.account_id || accts.length === 0
+          ? prev
+          : { ...prev, account_id: accts[0].id.toString() },
+      );
+    });
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -36,16 +46,27 @@ export default function Rent() {
       setError("Name and amount are required.");
       return;
     }
+    if (!form.account_id) {
+      setError("Add an account first.");
+      return;
+    }
+    const payload = {
+      account_id: parseInt(form.account_id, 10),
+      name: form.name,
+      amount: parseFloat(form.amount),
+      billing_cycle: form.billing_cycle,
+      category: HOUSING_CATEGORY,
+      next_billing_date: form.next_billing_date,
+      active: form.active,
+      notes: null,
+    };
     try {
-      await api.subscriptions.create({
-        name: form.name,
-        amount: parseFloat(form.amount),
-        billing_cycle: form.billing_cycle,
-        category: HOUSING_CATEGORY,
-        next_billing_date: form.next_billing_date,
-        active: form.active,
-        notes: null,
-      });
+      if (editingId !== null) {
+        await api.subscriptions.update(editingId, payload);
+        setEditingId(null);
+      } else {
+        await api.subscriptions.create(payload);
+      }
       setForm(emptyForm);
       await load();
     } catch (err) {
@@ -53,7 +74,27 @@ export default function Rent() {
     }
   }
 
+  function handleEdit(item: Subscription) {
+    setEditingId(item.id);
+    setError(null);
+    setForm({
+      account_id: item.account_id.toString(),
+      name: item.name,
+      amount: item.amount.toString(),
+      billing_cycle: item.billing_cycle,
+      next_billing_date: item.next_billing_date,
+      active: item.active,
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setError(null);
+    setForm(emptyForm);
+  }
+
   async function handleDelete(id: number) {
+    if (id === editingId) handleCancelEdit();
     await api.subscriptions.remove(id);
     await load();
   }
@@ -89,9 +130,27 @@ export default function Rent() {
       </div>
 
       <form className="card form-grid" onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
-        <h3>Add Rent or Utility</h3>
+        <h3>{editingId !== null ? "Edit Rent or Utility" : "Add Rent or Utility"}</h3>
         {error && <p className="error">{error}</p>}
+        {accounts.length === 0 && (
+          <p className="muted">
+            Add an account on the Accounts page before adding rent or utilities.
+          </p>
+        )}
         <div className="field-row">
+          <label>
+            Account
+            <select
+              value={form.account_id}
+              onChange={(e) => setForm({ ...form, account_id: e.target.value })}
+            >
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nickname}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             Name
             <input
@@ -120,7 +179,7 @@ export default function Rent() {
             >
               {CYCLES.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {capitalize(c)}
                 </option>
               ))}
             </select>
@@ -134,7 +193,14 @@ export default function Rent() {
             />
           </label>
         </div>
-        <button type="submit">Add</button>
+        <div className="field-row">
+          <button type="submit">{editingId !== null ? "Save Changes" : "Add"}</button>
+          {editingId !== null && (
+            <button type="button" className="ghost-btn" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <div className="card" style={{ marginTop: "1rem" }}>
@@ -142,6 +208,7 @@ export default function Rent() {
         <table>
           <thead>
             <tr>
+              <th>Account</th>
               <th>Name</th>
               <th>Amount</th>
               <th>Cycle</th>
@@ -154,9 +221,10 @@ export default function Rent() {
           <tbody>
             {items.map((i) => (
               <tr key={i.id} className={i.active ? "" : "inactive-row"}>
+                <td>{accounts.find((a) => a.id === i.account_id)?.nickname ?? "—"}</td>
                 <td>{i.name}</td>
                 <td>${i.amount.toFixed(2)}</td>
-                <td>{i.billing_cycle}</td>
+                <td>{capitalize(i.billing_cycle)}</td>
                 <td>${monthlyEquivalent(i.amount, i.billing_cycle).toFixed(2)}</td>
                 <td>{i.next_billing_date}</td>
                 <td>
@@ -167,6 +235,9 @@ export default function Rent() {
                   />
                 </td>
                 <td>
+                  <button className="link-btn link-btn-edit" onClick={() => handleEdit(i)}>
+                    Edit
+                  </button>
                   <button className="link-btn" onClick={() => handleDelete(i.id)}>
                     Delete
                   </button>
@@ -175,7 +246,7 @@ export default function Rent() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={8} className="muted">
                   No rent or utilities added yet.
                 </td>
               </tr>

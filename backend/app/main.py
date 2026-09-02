@@ -1,11 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import models
 from .database import engine
-from .routers import affordability, auth, incomes, subscriptions, summary, transactions
+from .migrations import run_migrations
+from .routers import (
+    accounts,
+    affordability,
+    auth,
+    banks,
+    incomes,
+    subscriptions,
+    summary,
+    transactions,
+)
 
-models.Base.metadata.create_all(bind=engine)
+run_migrations(engine)
 
 app = FastAPI(title="Budget Tracker API")
 
@@ -18,6 +27,8 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(banks.router)
+app.include_router(accounts.router)
 app.include_router(subscriptions.router)
 app.include_router(incomes.router)
 app.include_router(transactions.router)

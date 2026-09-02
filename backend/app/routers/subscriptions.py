@@ -8,6 +8,12 @@ from ..database import get_db
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
 
+def _ensure_account_owned(account_id: int, db: Session, user: models.User):
+    account = db.get(models.Account, account_id)
+    if not account or account.user_id != user.id:
+        raise HTTPException(status_code=400, detail="Account not found")
+
+
 @router.get("", response_model=list[schemas.Subscription])
 def list_subscriptions(
     db: Session = Depends(get_db), user: models.User = Depends(get_current_user)
@@ -26,6 +32,7 @@ def create_subscription(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
+    _ensure_account_owned(payload.account_id, db, user)
     sub = models.Subscription(**payload.model_dump(), user_id=user.id)
     db.add(sub)
     db.commit()
@@ -57,6 +64,8 @@ def update_subscription(
     user: models.User = Depends(get_current_user),
 ):
     sub = _get_owned_subscription(subscription_id, db, user)
+    if payload.account_id is not None:
+        _ensure_account_owned(payload.account_id, db, user)
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(sub, field, value)
     db.commit()

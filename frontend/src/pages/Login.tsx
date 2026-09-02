@@ -104,6 +104,9 @@ export default function Login() {
               />
               {errors.password && <span className="error">{errors.password}</span>}
             </label>
+            <p className="switch-mode">
+              <Link to="/forgot-password">Forgot password?</Link>
+            </p>
             <button type="submit" disabled={submitting}>
               {submitting ? "Logging in..." : "Log In"}
             </button>

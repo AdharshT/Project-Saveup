@@ -35,6 +35,17 @@ def login(payload: schemas.UserLogin, db: Session = Depends(get_db)):
     return schemas.AuthResponse(access_token=create_access_token(user.id), user=user)
 
 
+@router.post("/reset-password", status_code=204)
+def reset_password(payload: schemas.PasswordReset, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this email.")
+
+    user.password_hash = hash_password(payload.new_password)
+    db.commit()
+
+
 @router.get("/me", response_model=schemas.User)
 def me(current_user: models.User = Depends(get_current_user)):
     return current_user

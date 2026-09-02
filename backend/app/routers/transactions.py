@@ -8,6 +8,12 @@ from ..database import get_db
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
+def _ensure_account_owned(account_id: int, db: Session, user: models.User):
+    account = db.get(models.Account, account_id)
+    if not account or account.user_id != user.id:
+        raise HTTPException(status_code=400, detail="Account not found")
+
+
 @router.get("", response_model=list[schemas.Transaction])
 def list_transactions(
     db: Session = Depends(get_db), user: models.User = Depends(get_current_user)
@@ -26,6 +32,7 @@ def create_transaction(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
+    _ensure_account_owned(payload.account_id, db, user)
     txn = models.Transaction(**payload.model_dump(), user_id=user.id)
     db.add(txn)
     db.commit()
@@ -57,6 +64,8 @@ def update_transaction(
     user: models.User = Depends(get_current_user),
 ):
     txn = _get_owned_transaction(transaction_id, db, user)
+    if payload.account_id is not None:
+        _ensure_account_owned(payload.account_id, db, user)
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(txn, field, value)
     db.commit()

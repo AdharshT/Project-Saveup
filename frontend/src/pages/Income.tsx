@@ -1,11 +1,12 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
-import type { Income, IncomeFrequency, NextPaycheck, PayType } from "../types";
+import type { Account, Income, IncomeFrequency, NextPaycheck, PayType } from "../types";
 import { effectiveIncomeAmount } from "../utils/income";
 
 const FREQUENCIES: IncomeFrequency[] = ["weekly", "biweekly", "semimonthly", "monthly"];
 
 const emptyForm = {
+  account_id: "",
   source: "",
   amount: "",
   frequency: "biweekly" as IncomeFrequency,
@@ -20,15 +21,25 @@ const emptyForm = {
 export default function IncomePage() {
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [nextPaychecks, setNextPaychecks] = useState<NextPaycheck[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const load = () =>
-    Promise.all([api.incomes.list(), api.incomes.next()]).then(([inc, next]) => {
-      setIncomes(inc);
-      setNextPaychecks(next);
-    });
+    Promise.all([api.incomes.list(), api.incomes.next(), api.accounts.list()]).then(
+      ([inc, next, accts]) => {
+        setIncomes(inc);
+        setNextPaychecks(next);
+        setAccounts(accts);
+        setForm((prev) =>
+          prev.account_id || accts.length === 0
+            ? prev
+            : { ...prev, account_id: accts[0].id.toString() },
+        );
+      },
+    );
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -45,21 +56,32 @@ export default function IncomePage() {
       setError("Hours per pay period is required for hourly pay.");
       return;
     }
+    if (!form.account_id) {
+      setError("Add an account first.");
+      return;
+    }
+    const payload = {
+      account_id: parseInt(form.account_id, 10),
+      source: form.source,
+      amount: parseFloat(form.amount),
+      frequency: form.frequency,
+      pay_type: form.pay_type,
+      hours_per_period:
+        form.pay_type === "hourly" ? parseFloat(form.hours_per_period) : null,
+      pay_period_start:
+        form.pay_type === "hourly" && form.pay_period_start ? form.pay_period_start : null,
+      pay_period_end:
+        form.pay_type === "hourly" && form.pay_period_end ? form.pay_period_end : null,
+      next_pay_date: form.next_pay_date,
+      active: form.active,
+    };
     try {
-      await api.incomes.create({
-        source: form.source,
-        amount: parseFloat(form.amount),
-        frequency: form.frequency,
-        pay_type: form.pay_type,
-        hours_per_period:
-          form.pay_type === "hourly" ? parseFloat(form.hours_per_period) : null,
-        pay_period_start:
-          form.pay_type === "hourly" && form.pay_period_start ? form.pay_period_start : null,
-        pay_period_end:
-          form.pay_type === "hourly" && form.pay_period_end ? form.pay_period_end : null,
-        next_pay_date: form.next_pay_date,
-        active: form.active,
-      });
+      if (editingId !== null) {
+        await api.incomes.update(editingId, payload);
+        setEditingId(null);
+      } else {
+        await api.incomes.create(payload);
+      }
       setForm(emptyForm);
       await load();
     } catch (err) {
@@ -67,7 +89,31 @@ export default function IncomePage() {
     }
   }
 
+  function handleEdit(income: Income) {
+    setEditingId(income.id);
+    setError(null);
+    setForm({
+      account_id: income.account_id.toString(),
+      source: income.source,
+      amount: income.amount.toString(),
+      frequency: income.frequency,
+      pay_type: income.pay_type,
+      hours_per_period: income.hours_per_period?.toString() ?? "",
+      pay_period_start: income.pay_period_start ?? "",
+      pay_period_end: income.pay_period_end ?? "",
+      next_pay_date: income.next_pay_date,
+      active: income.active,
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setError(null);
+    setForm(emptyForm);
+  }
+
   async function handleDelete(id: number) {
+    if (id === editingId) handleCancelEdit();
     await api.incomes.remove(id);
     await load();
   }
@@ -91,9 +137,27 @@ export default function IncomePage() {
       </div>
 
       <form className="card form-grid" onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
-        <h3>Add Income Source</h3>
+        <h3>{editingId !== null ? "Edit Income Source" : "Add Income Source"}</h3>
         {error && <p className="error">{error}</p>}
+        {accounts.length === 0 && (
+          <p className="muted">
+            Add an account on the Accounts page before adding income sources.
+          </p>
+        )}
         <div className="field-row">
+          <label>
+            Account
+            <select
+              value={form.account_id}
+              onChange={(e) => setForm({ ...form, account_id: e.target.value })}
+            >
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nickname}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             Source
             <input
@@ -192,7 +256,16 @@ export default function IncomePage() {
             paycheck at {form.frequency} frequency
           </p>
         )}
-        <button type="submit">Add Income</button>
+        <div className="field-row">
+          <button type="submit">
+            {editingId !== null ? "Save Changes" : "Add Income"}
+          </button>
+          {editingId !== null && (
+            <button type="button" className="ghost-btn" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <div className="card" style={{ marginTop: "1rem" }}>
@@ -200,6 +273,7 @@ export default function IncomePage() {
         <table>
           <thead>
             <tr>
+              <th>Account</th>
               <th>Source</th>
               <th>Amount</th>
               <th>Pay Period</th>
@@ -211,6 +285,7 @@ export default function IncomePage() {
           <tbody>
             {incomes.map((i) => (
               <tr key={i.id}>
+                <td>{accounts.find((a) => a.id === i.account_id)?.nickname ?? "—"}</td>
                 <td>{i.source}</td>
                 <td>
                   ${effectiveIncomeAmount(i).toFixed(2)}
@@ -229,6 +304,9 @@ export default function IncomePage() {
                 <td>{i.frequency}</td>
                 <td>{i.next_pay_date}</td>
                 <td>
+                  <button className="link-btn link-btn-edit" onClick={() => handleEdit(i)}>
+                    Edit
+                  </button>
                   <button className="link-btn" onClick={() => handleDelete(i.id)}>
                     Delete
                   </button>
@@ -237,7 +315,7 @@ export default function IncomePage() {
             ))}
             {incomes.length === 0 && (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   No income sources yet.
                 </td>
               </tr>
