@@ -5,6 +5,12 @@ import logo from "../assets/logo.png";
 
 const FEATURES = [
   {
+    title: "Accounts",
+    description:
+      "Manage all your bank accounts in one place. Add multiple accounts to easily track balances, income, and spending across each account.",
+  },
+
+  {
     title: "Subscriptions",
     description:
       "Track every recurring cost — weekly, monthly, quarterly, or yearly — and see your total active monthly spend at a glance.",
