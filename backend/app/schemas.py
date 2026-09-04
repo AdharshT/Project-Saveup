@@ -1,16 +1,19 @@
 from datetime import date, date as date_type, datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 BillingCycle = Literal["weekly", "monthly", "quarterly", "yearly"]
 IncomeFrequency = Literal["weekly", "biweekly", "semimonthly", "monthly"]
 PayType = Literal["fixed", "hourly"]
 AccountType = Literal["checking", "savings", "credit"]
 
+USERNAME_PATTERN = r"^[a-zA-Z0-9_]+$"
+
 
 class UserCreate(BaseModel):
-    name: str
+    username: str = Field(min_length=3, max_length=20, pattern=USERNAME_PATTERN)
+    name: str = Field(min_length=1, max_length=100)
     email: str
     password: str
 
@@ -28,6 +31,7 @@ class PasswordReset(BaseModel):
 class User(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    username: str
     name: str
     email: str
 

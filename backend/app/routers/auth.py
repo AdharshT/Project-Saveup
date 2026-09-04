@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -11,11 +12,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/signup", response_model=schemas.AuthResponse, status_code=201)
 def signup(payload: schemas.UserCreate, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
-    existing = db.query(models.User).filter(models.User.email == email).first()
-    if existing:
+    username = payload.username.strip()
+
+    if db.query(models.User).filter(models.User.email == email).first():
         raise HTTPException(status_code=409, detail="An account with this email already exists.")
+    if db.query(models.User).filter(func.lower(models.User.username) == username.lower()).first():
+        raise HTTPException(status_code=409, detail="That username is already taken.")
 
     user = models.User(
+        username=username,
         name=payload.name.strip(),
         email=email,
         password_hash=hash_password(payload.password),

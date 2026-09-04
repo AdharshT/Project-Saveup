@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -40,7 +40,8 @@ export default function Login() {
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
 
-  if (user) {
+  const wasAlreadyLoggedIn = useRef(Boolean(user)).current;
+  if (wasAlreadyLoggedIn) {
     return <Navigate to={from ?? "/dashboard"} replace />;
   }
 
@@ -58,7 +59,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await signIn(values.email.trim(), values.password);
-      navigate(from ?? "/dashboard", { replace: true });
+      navigate(from ?? "/dashboard", { replace: true, state: { welcome: "back" } });
     } catch (err) {
       setServerError((err as Error).message);
     } finally {

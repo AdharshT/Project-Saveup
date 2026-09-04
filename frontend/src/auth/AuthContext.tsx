@@ -8,7 +8,7 @@ export type AuthUser = User;
 interface AuthContextValue {
   user: AuthUser | null;
   ready: boolean;
-  signUp: (name: string, email: string, password: string) => Promise<void>;
+  signUp: (username: string, name: string, email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
   updateEmail: (email: string) => void;
@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setReady(true));
   }, []);
 
-  async function signUp(name: string, email: string, password: string) {
-    const res = await api.auth.signup({ name, email, password });
+  async function signUp(username: string, name: string, email: string, password: string) {
+    const res = await api.auth.signup({ username, name, email, password });
     setToken(res.access_token);
     setUser(res.user);
   }

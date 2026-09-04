@@ -87,7 +87,7 @@ export default function Home() {
         <div className="card signup-card">
           {user ? (
             <div className="success-box">
-              <h3>You're all set, {user.name.split(" ")[0]}!</h3>
+              <h3>You're all set, {user.name}!</h3>
               <p className="muted">Signed in as {user.email}.</p>
               <button type="button" onClick={() => navigate("/dashboard")}>
                 Continue to Dashboard

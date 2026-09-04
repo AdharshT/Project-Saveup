@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import logo from "../assets/logo.png";
 
 interface FormValues {
+  username: string;
   name: string;
   email: string;
   password: string;
@@ -14,9 +15,18 @@ interface FormValues {
 type FormErrors = Partial<Record<keyof FormValues, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
 
 function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {};
+
+  if (!values.username.trim()) {
+    errors.username = "Username is required";
+  } else if (values.username.length < 3 || values.username.length > 20) {
+    errors.username = "Username must be 3-20 characters";
+  } else if (!USERNAME_PATTERN.test(values.username)) {
+    errors.username = "Only letters, numbers, and underscores are allowed";
+  }
 
   if (!values.name.trim()) {
     errors.name = "Name is required";
@@ -45,6 +55,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const { user, signUp } = useAuth();
   const [values, setValues] = useState<FormValues>({
+    username: "",
     name: "",
     email: "",
     password: "",
@@ -54,7 +65,8 @@ export default function SignUp() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (user) {
+  const wasAlreadyLoggedIn = useRef(Boolean(user)).current;
+  if (wasAlreadyLoggedIn) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -71,8 +83,8 @@ export default function SignUp() {
 
     setSubmitting(true);
     try {
-      await signUp(values.name.trim(), values.email.trim(), values.password);
-      navigate("/dashboard");
+      await signUp(values.username.trim(), values.name.trim(), values.email.trim(), values.password);
+      navigate("/dashboard", { state: { welcome: "new" } });
     } catch (err) {
       setServerError((err as Error).message);
     } finally {
@@ -103,11 +115,23 @@ export default function SignUp() {
           <form className="form-grid" onSubmit={handleSubmit} noValidate>
             {serverError && <p className="error">{serverError}</p>}
             <label>
+              Username
+              <input
+                type="text"
+                value={values.username}
+                onChange={(e) => handleChange("username", e.target.value)}
+                placeholder="jane_doe"
+                maxLength={20}
+              />
+              {errors.username && <span className="error">{errors.username}</span>}
+            </label>
+            <label>
               Name
               <input
                 type="text"
                 value={values.name}
                 onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="Jane Doe"
               />
               {errors.name && <span className="error">{errors.name}</span>}
             </label>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -9,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import type {
   Account,
   Income,
@@ -90,6 +92,10 @@ function SummaryCard({
 }
 
 export default function Dashboard() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [nextPaychecks, setNextPaychecks] = useState<NextPaycheck[]>([]);
@@ -128,6 +134,17 @@ export default function Dashboard() {
     const accountId = selectedAccountId === "all" ? undefined : selectedAccountId;
     api.summary.monthly(6, accountId).then(setComparison);
   }, [selectedAccountId]);
+
+  useEffect(() => {
+    const welcome = (location.state as { welcome?: "new" | "back" } | null)?.welcome;
+    if (welcome && user) {
+      setWelcomeMessage(
+        welcome === "new" ? `Welcome to Saveup ${user.name} 🎉` : `Welcome Back ${user.name}`,
+      );
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) return <p>Loading dashboard...</p>;
 
@@ -211,6 +228,19 @@ export default function Dashboard() {
 
   return (
     <div>
+      {welcomeMessage && (
+        <div className="welcome-banner">
+          <p>{welcomeMessage}</p>
+          <button
+            type="button"
+            className="welcome-banner-close"
+            onClick={() => setWelcomeMessage(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div className="dashboard-header">
         <h1>Dashboard</h1>
         {accounts.length > 0 && (

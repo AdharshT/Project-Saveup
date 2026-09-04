@@ -50,6 +50,10 @@ export default function Profile() {
             <input type="text" value={user.name} disabled />
           </label>
           <label>
+            Username
+            <input type="text" value={user.username} disabled />
+          </label>
+          <label>
             Email
             <input
               type="email"

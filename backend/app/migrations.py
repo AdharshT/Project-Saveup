@@ -26,6 +26,42 @@ def _get_or_create_unknown_bank(conn, user_id: int) -> int:
     return result.lastrowid
 
 
+def _index_exists(conn, index_name: str) -> bool:
+    row = conn.execute(
+        text("SELECT name FROM sqlite_master WHERE type='index' AND name=:n"),
+        {"n": index_name},
+    ).fetchone()
+    return row is not None
+
+
+def _migrate_users_table(conn):
+    """Rename users.name -> username, de-duplicate, add a unique index, and
+    add back a separate display `name` column (backfilled from username)."""
+    if _column_exists(conn, "users", "name") and not _column_exists(conn, "users", "username"):
+        conn.execute(text("ALTER TABLE users RENAME COLUMN name TO username"))
+
+    if not _index_exists(conn, "ix_users_username"):
+        dupes = conn.execute(
+            text("SELECT username FROM users GROUP BY username HAVING COUNT(*) > 1")
+        ).fetchall()
+        for (username,) in dupes:
+            rows = conn.execute(
+                text("SELECT id FROM users WHERE username = :u ORDER BY id"),
+                {"u": username},
+            ).fetchall()
+            for i, (user_id,) in enumerate(rows[1:], start=2):
+                conn.execute(
+                    text("UPDATE users SET username = :u WHERE id = :id"),
+                    {"u": f"{username}{i}", "id": user_id},
+                )
+
+        conn.execute(text("CREATE UNIQUE INDEX ix_users_username ON users(username)"))
+
+    if not _column_exists(conn, "users", "name"):
+        conn.execute(text("ALTER TABLE users ADD COLUMN name TEXT"))
+    conn.execute(text("UPDATE users SET name = username WHERE name IS NULL"))
+
+
 def _migrate_accounts_table(conn):
     """Rename accounts.name -> nickname and add the bank_id/type/last4 columns."""
     if _column_exists(conn, "accounts", "name") and not _column_exists(
@@ -58,6 +94,7 @@ def run_migrations(engine: Engine):
     models.Base.metadata.create_all(bind=engine)
 
     with engine.begin() as conn:
+        _migrate_users_table(conn)
         _migrate_accounts_table(conn)
 
         for table in _TABLES_NEEDING_ACCOUNT:
