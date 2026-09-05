@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import type { Account, AccountType, Bank } from "../types";
 import { capitalize } from "../utils/format";
 
-const ACCOUNT_TYPES: AccountType[] = ["checking", "savings", "credit"];
+const ACCOUNT_TYPES: AccountType[] = ["Checking", "Savings", "Credit"];
 
 const BANK_OPTIONS = [
   "Chase",
@@ -139,7 +139,7 @@ export default function Accounts() {
     setError(null);
     setForm({
       bank_id: account.bank_id.toString(),
-      type: account.type ?? "checking",
+      type: account.type ?? "Checking",
       last4: account.last4 ?? "",
       balance: account.balance.toString(),
     });

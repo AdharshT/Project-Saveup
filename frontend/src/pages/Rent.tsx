@@ -5,7 +5,7 @@ import { capitalize } from "../utils/format";
 import { monthlyEquivalent } from "../utils/subscriptions";
 
 const HOUSING_CATEGORY = "Housing";
-const CYCLES: BillingCycle[] = ["weekly", "monthly", "quarterly", "yearly"];
+const CYCLES: BillingCycle[] = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
 const emptyForm = {
   account_id: "",

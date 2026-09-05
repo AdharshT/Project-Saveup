@@ -196,14 +196,25 @@ class NextPaycheck(BaseModel):
     date: date
 
 
-class AffordabilityRequest(BaseModel):
-    item_name: str
+class BasketItemInput(BaseModel):
+    name: str
     price: float
+
+
+class BasketItem(BasketItemInput):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+
+
+class AffordabilityRequest(BaseModel):
+    items: list[BasketItemInput]
 
 
 class AffordabilityResponse(BaseModel):
-    item_name: str
-    price: float
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    items: list[BasketItem]
+    total_price: float
     can_afford: bool
     monthly_income: float
     monthly_subscription_cost: float
@@ -211,3 +222,4 @@ class AffordabilityResponse(BaseModel):
     discretionary_balance: float
     balance_after_purchase: float
     message: str
+    created_at: datetime

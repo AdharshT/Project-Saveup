@@ -3,13 +3,13 @@ import { api } from "../api/client";
 import type { Account, Income, IncomeFrequency, NextPaycheck, PayType } from "../types";
 import { effectiveIncomeAmount } from "../utils/income";
 
-const FREQUENCIES: IncomeFrequency[] = ["weekly", "biweekly", "semimonthly", "monthly"];
+const FREQUENCIES: IncomeFrequency[] = ["Weekly", "Biweekly", "Semimonthly", "Monthly"];
 
 const emptyForm = {
   account_id: "",
   source: "",
   amount: "",
-  frequency: "biweekly" as IncomeFrequency,
+  frequency: "Biweekly" as IncomeFrequency,
   pay_type: "fixed" as PayType,
   hours_per_period: "",
   pay_period_start: "",
@@ -52,7 +52,7 @@ export default function IncomePage() {
       setError("Source and amount are required.");
       return;
     }
-    if (form.pay_type === "hourly" && !form.hours_per_period) {
+    if (form.pay_type === "Hourly" && !form.hours_per_period) {
       setError("Hours per pay period is required for hourly pay.");
       return;
     }
@@ -67,11 +67,11 @@ export default function IncomePage() {
       frequency: form.frequency,
       pay_type: form.pay_type,
       hours_per_period:
-        form.pay_type === "hourly" ? parseFloat(form.hours_per_period) : null,
+        form.pay_type === "Hourly" ? parseFloat(form.hours_per_period) : null,
       pay_period_start:
-        form.pay_type === "hourly" && form.pay_period_start ? form.pay_period_start : null,
+        form.pay_type === "Hourly" && form.pay_period_start ? form.pay_period_start : null,
       pay_period_end:
-        form.pay_type === "hourly" && form.pay_period_end ? form.pay_period_end : null,
+        form.pay_type === "Hourly" && form.pay_period_end ? form.pay_period_end : null,
       next_pay_date: form.next_pay_date,
       active: form.active,
     };
@@ -185,16 +185,16 @@ export default function IncomePage() {
             </select>
           </label>
           <label>
-            {form.pay_type === "hourly" ? "Hourly Rate" : "Amount"}
+            {form.pay_type === "Hourly" ? "Hourly Rate" : "Amount"}
             <input
               type="number"
               step="0.01"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
-              placeholder={form.pay_type === "hourly" ? "17.50" : "2500"}
+              placeholder={form.pay_type === "Hourly" ? "17.50" : "2500"}
             />
           </label>
-          {form.pay_type === "hourly" && (
+          {form.pay_type === "Hourly" && (
             <label>
               Hours per Pay Period
               <input
@@ -206,7 +206,7 @@ export default function IncomePage() {
               />
             </label>
           )}
-          {form.pay_type === "hourly" && (
+          {form.pay_type === "Hourly" && (
             <label>
               Pay Period Start
               <input
@@ -216,7 +216,7 @@ export default function IncomePage() {
               />
             </label>
           )}
-          {form.pay_type === "hourly" && (
+          {form.pay_type === "Hourly" && (
             <label>
               Pay Period End
               <input
@@ -250,7 +250,7 @@ export default function IncomePage() {
             />
           </label>
         </div>
-        {form.pay_type === "hourly" && form.amount && form.hours_per_period && (
+        {form.pay_type === "Hourly" && form.amount && form.hours_per_period && (
           <p className="muted">
             = ${(parseFloat(form.amount) * parseFloat(form.hours_per_period)).toFixed(2)} per
             paycheck at {form.frequency} frequency
@@ -289,7 +289,7 @@ export default function IncomePage() {
                 <td>{i.source}</td>
                 <td>
                   ${effectiveIncomeAmount(i).toFixed(2)}
-                  {i.pay_type === "hourly" && (
+                  {i.pay_type === "Hourly" && (
                     <span className="muted">
                       {" "}
                       (${i.amount.toFixed(2)}/hr &times; {i.hours_per_period}hr)

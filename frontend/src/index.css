@@ -123,6 +123,33 @@ h3 {
   gap: 0.55rem;
 }
 
+.basket-list {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef1ef;
+  gap: 0.55rem;
+}
+
+.basket-list li {
+  font-size: 0.9rem;
+}
+
+.history-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #16241c;
+  text-align: left;
+}
+
+.history-toggle:hover {
+  background: none;
+  text-decoration: underline;
+}
+
 .card-breakdown li {
   display: flex;
   flex-direction: column;

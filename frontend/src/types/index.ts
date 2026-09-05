@@ -10,9 +10,9 @@ export interface AuthResponse {
   user: User;
 }
 
-export type BillingCycle = "weekly" | "monthly" | "quarterly" | "yearly";
-export type IncomeFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
-export type PayType = "fixed" | "hourly";
+export type BillingCycle = "Weekly" | "Monthly" | "Quarterly" | "Yearly";
+export type IncomeFrequency = "Weekly" | "Biweekly" | "Semimonthly" | "Monthly";
+export type PayType = "Fixed" | "Hourly";
 
 export interface Bank {
   id: number;
@@ -22,7 +22,7 @@ export interface Bank {
 
 export type BankInput = Omit<Bank, "id" | "created_at">;
 
-export type AccountType = "checking" | "savings" | "credit";
+export type AccountType = "Checking" | "Savings" | "Credit";
 
 export interface Account {
   id: number;
@@ -97,9 +97,19 @@ export interface MonthlyComparison {
   months: MonthlyTotal[];
 }
 
-export interface AffordabilityResponse {
-  item_name: string;
+export interface BasketItemInput {
+  name: string;
   price: number;
+}
+
+export interface BasketItem extends BasketItemInput {
+  id: number;
+}
+
+export interface AffordabilityResponse {
+  id: number;
+  items: BasketItem[];
+  total_price: number;
   can_afford: boolean;
   monthly_income: number;
   monthly_subscription_cost: number;
@@ -107,4 +117,5 @@ export interface AffordabilityResponse {
   discretionary_balance: number;
   balance_after_purchase: number;
   message: string;
+  created_at: string;
 }

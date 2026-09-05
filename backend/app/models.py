@@ -81,3 +81,28 @@ class Transaction(Base):
     category = Column(String, nullable=True)
     date = Column(Date, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
+
+
+class BasketCheck(Base):
+    __tablename__ = "basket_checks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    total_price = Column(Float, nullable=False)
+    can_afford = Column(Boolean, nullable=False)
+    message = Column(String, nullable=False)
+    monthly_income = Column(Float, nullable=False)
+    monthly_subscription_cost = Column(Float, nullable=False)
+    spending_this_month = Column(Float, nullable=False)
+    discretionary_balance = Column(Float, nullable=False)
+    balance_after_purchase = Column(Float, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class BasketCheckItem(Base):
+    __tablename__ = "basket_check_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    basket_check_id = Column(Integer, ForeignKey("basket_checks.id"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    price = Column(Float, nullable=False)

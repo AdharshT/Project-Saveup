@@ -4,7 +4,7 @@ import type { Account, BillingCycle, Subscription } from "../types";
 import { capitalize } from "../utils/format";
 
 const HOUSING_CATEGORY = "Housing";
-const CYCLES: BillingCycle[] = ["weekly", "monthly", "quarterly", "yearly"];
+const CYCLES: BillingCycle[] = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
 const SUBSCRIPTION_CATEGORIES = [
   { group: "Streaming & Media", options: ["Video", "Music", "Gaming"] },

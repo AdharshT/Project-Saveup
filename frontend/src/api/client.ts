@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   Bank,
   BankInput,
+  BasketItemInput,
   Income,
   IncomeInput,
   MonthlyComparison,
@@ -117,10 +118,13 @@ export const api = {
       ),
   },
   affordability: {
-    check: (item_name: string, price: number) =>
+    check: (items: BasketItemInput[]) =>
       request<AffordabilityResponse>("/affordability/check", {
         method: "POST",
-        body: JSON.stringify({ item_name, price }),
+        body: JSON.stringify({ items }),
       }),
+    history: () => request<AffordabilityResponse[]>("/affordability/history"),
+    removeHistory: (id: number) =>
+      request<void>(`/affordability/history/${id}`, { method: "DELETE" }),
   },
 };
