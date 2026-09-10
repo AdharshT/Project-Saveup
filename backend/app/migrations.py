@@ -1,7 +1,7 @@
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 from . import models
@@ -17,8 +17,7 @@ _REGRESS_DELTA = {
 
 
 def _column_exists(conn, table: str, column: str) -> bool:
-    rows = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
-    return any(row[1] == column for row in rows)
+    return any(c["name"] == column for c in inspect(conn).get_columns(table))
 
 
 def _get_or_create_unknown_bank(conn, user_id: int) -> int:
@@ -36,12 +35,8 @@ def _get_or_create_unknown_bank(conn, user_id: int) -> int:
     return result.lastrowid
 
 
-def _index_exists(conn, index_name: str) -> bool:
-    row = conn.execute(
-        text("SELECT name FROM sqlite_master WHERE type='index' AND name=:n"),
-        {"n": index_name},
-    ).fetchone()
-    return row is not None
+def _index_exists(conn, table: str, index_name: str) -> bool:
+    return any(idx["name"] == index_name for idx in inspect(conn).get_indexes(table))
 
 
 def _migrate_users_table(conn):
@@ -50,7 +45,7 @@ def _migrate_users_table(conn):
     if _column_exists(conn, "users", "name") and not _column_exists(conn, "users", "username"):
         conn.execute(text("ALTER TABLE users RENAME COLUMN name TO username"))
 
-    if not _index_exists(conn, "ix_users_username"):
+    if not _index_exists(conn, "users", "ix_users_username"):
         dupes = conn.execute(
             text("SELECT username FROM users GROUP BY username HAVING COUNT(*) > 1")
         ).fetchall()

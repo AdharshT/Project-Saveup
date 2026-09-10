@@ -7,10 +7,10 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, nullable=False, unique=True, index=True)
-    name = Column(String, nullable=True)
-    email = Column(String, nullable=False, unique=True, index=True)
-    password_hash = Column(String, nullable=False)
+    username = Column(String(150), nullable=False, unique=True, index=True)
+    name = Column(String(255), nullable=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -19,7 +19,7 @@ class Bank(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String(255), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -29,9 +29,9 @@ class Account(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     bank_id = Column(Integer, ForeignKey("banks.id"), nullable=True, index=True)
-    nickname = Column(String, nullable=False)
-    type = Column(String, nullable=True)  # checking | savings | credit
-    last4 = Column(String, nullable=True)
+    nickname = Column(String(255), nullable=False)
+    type = Column(String(20), nullable=True)  # checking | savings | credit
+    last4 = Column(String(10), nullable=True)
     balance = Column(Float, nullable=False, default=0.0)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -42,14 +42,14 @@ class Subscription(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String(255), nullable=False)
     amount = Column(Float, nullable=False)
-    billing_cycle = Column(String, nullable=False)  # weekly | monthly | quarterly | yearly
-    category = Column(String, nullable=True)
+    billing_cycle = Column(String(20), nullable=False)  # weekly | monthly | quarterly | yearly
+    category = Column(String(100), nullable=True)
     last_payment_date = Column(Date, nullable=True)
     next_billing_date = Column(Date, nullable=False)
     active = Column(Boolean, default=True, nullable=False)
-    notes = Column(String, nullable=True)
+    notes = Column(String(1000), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -59,10 +59,10 @@ class Income(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
-    source = Column(String, nullable=False)
+    source = Column(String(255), nullable=False)
     amount = Column(Float, nullable=False)  # fixed: amount per paycheck; hourly: rate per hour
-    frequency = Column(String, nullable=False)  # weekly | biweekly | semimonthly | monthly
-    pay_type = Column(String, nullable=False, default="fixed")  # fixed | hourly
+    frequency = Column(String(20), nullable=False)  # weekly | biweekly | semimonthly | monthly
+    pay_type = Column(String(20), nullable=False, default="fixed")  # fixed | hourly
     hours_per_period = Column(Float, nullable=True)  # hours worked per pay period, hourly only
     pay_period_start = Column(Date, nullable=True)  # descriptive only, hourly
     pay_period_end = Column(Date, nullable=True)  # descriptive only, hourly
@@ -77,9 +77,9 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
-    description = Column(String, nullable=False)
+    description = Column(String(255), nullable=False)
     amount = Column(Float, nullable=False)
-    category = Column(String, nullable=True)
+    category = Column(String(100), nullable=True)
     date = Column(Date, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -91,7 +91,7 @@ class BasketCheck(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     total_price = Column(Float, nullable=False)
     can_afford = Column(Boolean, nullable=False)
-    message = Column(String, nullable=False)
+    message = Column(String(500), nullable=False)
     monthly_income = Column(Float, nullable=False)
     monthly_subscription_cost = Column(Float, nullable=False)
     spending_this_month = Column(Float, nullable=False)
@@ -105,5 +105,5 @@ class BasketCheckItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     basket_check_id = Column(Integer, ForeignKey("basket_checks.id"), nullable=False, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String(255), nullable=False)
     price = Column(Float, nullable=False)
