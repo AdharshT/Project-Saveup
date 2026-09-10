@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import type { Account, AccountType, Bank } from "../types";
 import { capitalize } from "../utils/format";
 
-const ACCOUNT_TYPES: AccountType[] = ["Checking", "Savings", "Credit"];
+const ACCOUNT_TYPES: AccountType[] = ["checking", "savings", "credit"];
 
 const BANK_OPTIONS = [
   "Chase",
@@ -139,7 +139,7 @@ export default function Accounts() {
     setError(null);
     setForm({
       bank_id: account.bank_id.toString(),
-      type: account.type ?? "Checking",
+      type: account.type ?? "checking",
       last4: account.last4 ?? "",
       balance: account.balance.toString(),
     });
@@ -189,7 +189,7 @@ export default function Accounts() {
         {bankError && <p className="error">{bankError}</p>}
         <div className="field-row">
           <label>
-            Bank Name
+            <span>Bank Name<span className="required-asterisk">*</span></span>
             <select
               value={useCustomBank ? OTHER_BANK : bankForm.name}
               onChange={(e) => {
@@ -215,7 +215,7 @@ export default function Accounts() {
           </label>
           {useCustomBank && (
             <label>
-              Custom Bank Name
+              <span>Custom Bank Name<span className="required-asterisk">*</span></span>
               <input
                 value={bankForm.name}
                 onChange={(e) => setBankForm({ name: e.target.value })}
@@ -287,7 +287,7 @@ export default function Accounts() {
             </select>
           </label>
           <label>
-            Last 4
+            Last 4 Of Bank Account
             <input
               value={form.last4}
               onChange={(e) => setForm({ ...form, last4: e.target.value })}
@@ -323,7 +323,7 @@ export default function Accounts() {
             <tr>
               <th>Bank</th>
               <th>Type</th>
-              <th>Last 4</th>
+              <th>Last 4 Of Bank Account</th>
               <th>Balance</th>
               <th></th>
             </tr>

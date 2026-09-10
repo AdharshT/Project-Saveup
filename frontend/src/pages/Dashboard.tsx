@@ -4,6 +4,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -86,6 +89,81 @@ function SummaryCard({
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+interface SavingsPieCardProps {
+  title: string;
+  income: number;
+  subscriptionCost: number;
+  spending: number;
+  hasData: boolean;
+}
+
+function SavingsPieCard({
+  title,
+  income,
+  subscriptionCost,
+  spending,
+  hasData,
+}: SavingsPieCardProps) {
+  const savingsRaw = income - subscriptionCost - spending;
+  const savings = Math.max(savingsRaw, 0);
+  const pieData = [
+    { name: "Savings", value: savings, color: "#2a78d6" },
+    { name: "Subscriptions", value: subscriptionCost, color: "#eb6834" },
+    { name: "Spending", value: spending, color: "#1baf7a" },
+  ];
+  const pieTotal = pieData.reduce((sum, d) => sum + d.value, 0);
+  const visibleSlices = pieData.filter((d) => d.value > 0);
+
+  return (
+    <div className="card" style={{ marginTop: "1.5rem" }}>
+      <h3>{title}</h3>
+      {!hasData || pieTotal <= 0 ? (
+        <p className="muted">Not enough data yet to show this breakdown.</p>
+      ) : (
+        <>
+          {savingsRaw < 0 && (
+            <p className="delta-up">
+              You've spent ${(-savingsRaw).toFixed(2)} more than you've saved.
+            </p>
+          )}
+          <div className="savings-pie-layout">
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={visibleSlices}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                >
+                  {visibleSlices.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
+              </PieChart>
+            </ResponsiveContainer>
+            <ul className="plain-list savings-pie-legend">
+              {visibleSlices.map((entry) => (
+                <li key={entry.name} className="list-header">
+                  <span>
+                    <span className="savings-pie-swatch" style={{ backgroundColor: entry.color }} />
+                    {entry.name}
+                  </span>
+                  <span>
+                    ${entry.value.toFixed(2)} · {((entry.value / pieTotal) * 100).toFixed(0)}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
       )}
     </div>
   );
@@ -334,6 +412,22 @@ export default function Dashboard() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      <SavingsPieCard
+        title="Savings Breakdown — This Month"
+        income={monthlyIncomeTotal}
+        subscriptionCost={monthlySubscriptionTotal}
+        spending={thisMonth?.total ?? 0}
+        hasData={!!thisMonth}
+      />
+
+      <SavingsPieCard
+        title="Savings Breakdown — Last Month"
+        income={monthlyIncomeTotal}
+        subscriptionCost={monthlySubscriptionTotal}
+        spending={lastMonth?.total ?? 0}
+        hasData={!!lastMonth}
+      />
     </div>
   );
 }

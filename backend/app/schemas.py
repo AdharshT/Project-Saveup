@@ -91,7 +91,7 @@ class SubscriptionBase(BaseModel):
     amount: float
     billing_cycle: BillingCycle
     category: Optional[str] = None
-    next_billing_date: date
+    last_payment_date: date
     active: bool = True
     notes: Optional[str] = None
 
@@ -106,7 +106,7 @@ class SubscriptionUpdate(BaseModel):
     amount: Optional[float] = None
     billing_cycle: Optional[BillingCycle] = None
     category: Optional[str] = None
-    next_billing_date: Optional[date] = None
+    last_payment_date: Optional[date] = None
     active: Optional[bool] = None
     notes: Optional[str] = None
 
@@ -114,6 +114,7 @@ class SubscriptionUpdate(BaseModel):
 class Subscription(SubscriptionBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    next_billing_date: date
     created_at: datetime
 
 

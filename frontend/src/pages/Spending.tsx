@@ -154,7 +154,7 @@ export default function Spending() {
             </select>
           </label>
           <label>
-            Description
+            <span>Description<span className="required-asterisk">*</span></span>
             <input
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -162,7 +162,7 @@ export default function Spending() {
             />
           </label>
           <label>
-            Amount
+            <span>Amount<span className="required-asterisk">*</span></span>
             <input
               type="number"
               step="0.01"

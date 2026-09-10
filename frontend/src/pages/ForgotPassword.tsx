@@ -110,7 +110,7 @@ export default function ForgotPassword() {
               <form className="form-grid" onSubmit={handleSubmit} noValidate>
                 {serverError && <p className="error">{serverError}</p>}
                 <label>
-                  Email
+                  Email<span className="required-asterisk">*</span>
                   <input
                     type="email"
                     value={values.email}
@@ -120,7 +120,7 @@ export default function ForgotPassword() {
                 </label>
                 <div className="field-row">
                   <label>
-                    New Password
+                    <span>New Password<span className="required-asterisk">*</span></span>
                     <input
                       type="password"
                       value={values.newPassword}
@@ -129,7 +129,7 @@ export default function ForgotPassword() {
                     {errors.newPassword && <span className="error">{errors.newPassword}</span>}
                   </label>
                   <label>
-                    Confirm Password
+                    <span>Confirm Password<span className="required-asterisk">*</span></span>
                     <input
                       type="password"
                       value={values.confirmPassword}

@@ -88,7 +88,7 @@ export default function Login() {
           <form className="form-grid" onSubmit={handleSubmit} noValidate>
             {serverError && <p className="error">{serverError}</p>}
             <label>
-              Email
+              Email<span className="required-asterisk">*</span>
               <input
                 type="email"
                 value={values.email}
@@ -97,7 +97,7 @@ export default function Login() {
               {errors.email && <span className="error">{errors.email}</span>}
             </label>
             <label>
-              Password
+              Password<span className="required-asterisk">*</span>
               <input
                 type="password"
                 value={values.password}

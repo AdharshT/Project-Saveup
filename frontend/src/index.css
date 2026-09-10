@@ -134,6 +134,42 @@ h3 {
   font-size: 0.9rem;
 }
 
+.savings-pie-layout {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.savings-pie-layout > div:first-child {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.savings-pie-legend {
+  flex: 1 1 220px;
+  gap: 0.6rem;
+}
+
+.savings-pie-legend li span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.savings-pie-legend li span:last-child {
+  color: #52514e;
+  font-size: 0.9rem;
+}
+
+.savings-pie-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
 .history-toggle {
   background: none;
   border: none;
@@ -306,6 +342,11 @@ th {
 .error {
   color: #c0392b;
   font-size: 0.85rem;
+}
+
+.required-asterisk {
+  color: #c0392b;
+  margin-left: 0.15rem;
 }
 
 .success {

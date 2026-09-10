@@ -115,7 +115,7 @@ export default function SignUp() {
           <form className="form-grid" onSubmit={handleSubmit} noValidate>
             {serverError && <p className="error">{serverError}</p>}
             <label>
-              Username
+              Username<span className="required-asterisk">*</span>
               <input
                 type="text"
                 value={values.username}
@@ -126,7 +126,7 @@ export default function SignUp() {
               {errors.username && <span className="error">{errors.username}</span>}
             </label>
             <label>
-              Name
+              Name<span className="required-asterisk">*</span>
               <input
                 type="text"
                 value={values.name}
@@ -136,7 +136,7 @@ export default function SignUp() {
               {errors.name && <span className="error">{errors.name}</span>}
             </label>
             <label>
-              Email
+              Email<span className="required-asterisk">*</span>
               <input
                 type="email"
                 value={values.email}
@@ -146,7 +146,7 @@ export default function SignUp() {
             </label>
             <div className="field-row">
               <label>
-                Password
+                <span>Password<span className="required-asterisk">*</span></span>
                 <input
                   type="password"
                   value={values.password}
@@ -155,7 +155,7 @@ export default function SignUp() {
                 {errors.password && <span className="error">{errors.password}</span>}
               </label>
               <label>
-                Confirm Password
+                <span>Confirm Password<span className="required-asterisk">*</span></span>
                 <input
                   type="password"
                   value={values.confirmPassword}

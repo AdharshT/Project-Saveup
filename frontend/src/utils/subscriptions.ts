@@ -34,6 +34,35 @@ function stepBack(date: Date, cycle: string): Date {
   return d;
 }
 
+function toISODate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Preview of the next billing date, one cycle after the given date.
+ * Mirrors the backend's authoritative calculation for display purposes only.
+ */
+export function addBillingInterval(dateStr: string, cycle: string): string {
+  const d = parseISODate(dateStr);
+  switch (cycle) {
+    case "weekly":
+      d.setDate(d.getDate() + 7);
+      break;
+    case "quarterly":
+      d.setMonth(d.getMonth() + 3);
+      break;
+    case "yearly":
+      d.setFullYear(d.getFullYear() + 1);
+      break;
+    default:
+      d.setMonth(d.getMonth() + 1);
+  }
+  return toISODate(d);
+}
+
 /**
  * How much of this subscription is actually billed within the given month,
  * accounting for cycles (like quarterly/yearly) that don't bill every month.

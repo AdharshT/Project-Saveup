@@ -54,7 +54,7 @@ export default function Profile() {
             <input type="text" value={user.username} disabled />
           </label>
           <label>
-            Email
+            Email<span className="required-asterisk">*</span>
             <input
               type="email"
               value={email}

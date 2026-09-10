@@ -107,7 +107,7 @@ export default function Affordability() {
         {error && <p className="error">{error}</p>}
         <div className="field-row">
           <label>
-            Item
+            <span>Item<span className="required-asterisk">*</span></span>
             <input
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
@@ -115,7 +115,7 @@ export default function Affordability() {
             />
           </label>
           <label>
-            Price
+            <span>Price<span className="required-asterisk">*</span></span>
             <input
               type="number"
               step="0.01"

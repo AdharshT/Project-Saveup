@@ -10,9 +10,9 @@ export interface AuthResponse {
   user: User;
 }
 
-export type BillingCycle = "Weekly" | "Monthly" | "Quarterly" | "Yearly";
-export type IncomeFrequency = "Weekly" | "Biweekly" | "Semimonthly" | "Monthly";
-export type PayType = "Fixed" | "Hourly";
+export type BillingCycle = "weekly" | "monthly" | "quarterly" | "yearly";
+export type IncomeFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
+export type PayType = "fixed" | "hourly";
 
 export interface Bank {
   id: number;
@@ -22,7 +22,7 @@ export interface Bank {
 
 export type BankInput = Omit<Bank, "id" | "created_at">;
 
-export type AccountType = "Checking" | "Savings" | "Credit";
+export type AccountType = "checking" | "savings" | "credit";
 
 export interface Account {
   id: number;
@@ -43,13 +43,14 @@ export interface Subscription {
   amount: number;
   billing_cycle: BillingCycle;
   category: string | null;
+  last_payment_date: string;
   next_billing_date: string;
   active: boolean;
   notes: string | null;
   created_at: string;
 }
 
-export type SubscriptionInput = Omit<Subscription, "id" | "created_at">;
+export type SubscriptionInput = Omit<Subscription, "id" | "created_at" | "next_billing_date">;
 
 export interface Income {
   id: number;

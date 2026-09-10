@@ -2,9 +2,10 @@ import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { Account, BillingCycle, Subscription } from "../types";
 import { capitalize } from "../utils/format";
+import { addBillingInterval } from "../utils/subscriptions";
 
 const HOUSING_CATEGORY = "Housing";
-const CYCLES: BillingCycle[] = ["Weekly", "Monthly", "Quarterly", "Yearly"];
+const CYCLES: BillingCycle[] = ["weekly", "monthly", "quarterly", "yearly"];
 
 const SUBSCRIPTION_CATEGORIES = [
   { group: "Streaming & Media", options: ["Video", "Music", "Gaming"] },
@@ -20,7 +21,7 @@ const emptyForm = {
   amount: "",
   billing_cycle: "monthly" as BillingCycle,
   category: SUBSCRIPTION_CATEGORIES[0].options[0] as string,
-  next_billing_date: new Date().toISOString().slice(0, 10),
+  last_payment_date: new Date().toISOString().slice(0, 10),
   active: true,
   notes: "",
 };
@@ -65,7 +66,7 @@ export default function Subscriptions() {
       amount: parseFloat(form.amount),
       billing_cycle: form.billing_cycle,
       category: form.category,
-      next_billing_date: form.next_billing_date,
+      last_payment_date: form.last_payment_date,
       active: form.active,
       notes: form.notes || null,
     };
@@ -92,7 +93,7 @@ export default function Subscriptions() {
       amount: sub.amount.toString(),
       billing_cycle: sub.billing_cycle,
       category: sub.category ?? SUBSCRIPTION_CATEGORIES[0].options[0],
-      next_billing_date: sub.next_billing_date,
+      last_payment_date: sub.last_payment_date,
       active: sub.active,
       notes: sub.notes ?? "",
     });
@@ -148,7 +149,7 @@ export default function Subscriptions() {
             </select>
           </label>
           <label>
-            Name
+            <span>Name<span className="required-asterisk">*</span></span>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -156,7 +157,7 @@ export default function Subscriptions() {
             />
           </label>
           <label>
-            Amount
+            <span>Amount<span className="required-asterisk">*</span></span>
             <input
               type="number"
               step="0.01"
@@ -198,14 +199,19 @@ export default function Subscriptions() {
             </select>
           </label>
           <label>
-            Next Billing Date
+            <span>Last Payment Date<span className="required-asterisk">*</span></span>
             <input
               type="date"
-              value={form.next_billing_date}
-              onChange={(e) => setForm({ ...form, next_billing_date: e.target.value })}
+              value={form.last_payment_date}
+              onChange={(e) => setForm({ ...form, last_payment_date: e.target.value })}
             />
           </label>
         </div>
+        {form.last_payment_date && (
+          <p className="muted">
+            Next bill: {addBillingInterval(form.last_payment_date, form.billing_cycle)}
+          </p>
+        )}
         <div className="field-row">
           <button type="submit">
             {editingId !== null ? "Save Changes" : "Add Subscription"}
@@ -231,6 +237,7 @@ export default function Subscriptions() {
               <th>Amount</th>
               <th>Cycle</th>
               <th>Category</th>
+              <th>Last Payment</th>
               <th>Next Bill</th>
               <th>Active</th>
               <th></th>
@@ -244,6 +251,7 @@ export default function Subscriptions() {
                 <td>${s.amount.toFixed(2)}</td>
                 <td>{capitalize(s.billing_cycle)}</td>
                 <td>{s.category ?? "—"}</td>
+                <td>{s.last_payment_date}</td>
                 <td>{s.next_billing_date}</td>
                 <td>
                   <input
@@ -264,7 +272,7 @@ export default function Subscriptions() {
             ))}
             {subscriptions.length === 0 && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={9} className="muted">
                   No subscriptions yet.
                 </td>
               </tr>

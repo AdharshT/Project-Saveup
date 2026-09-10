@@ -2,17 +2,17 @@ import { type FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { Account, BillingCycle, Subscription } from "../types";
 import { capitalize } from "../utils/format";
-import { monthlyEquivalent } from "../utils/subscriptions";
+import { addBillingInterval, monthlyEquivalent } from "../utils/subscriptions";
 
 const HOUSING_CATEGORY = "Housing";
-const CYCLES: BillingCycle[] = ["Weekly", "Monthly", "Quarterly", "Yearly"];
+const CYCLES: BillingCycle[] = ["weekly", "monthly", "quarterly", "yearly"];
 
 const emptyForm = {
   account_id: "",
   name: "",
   amount: "",
   billing_cycle: "monthly" as BillingCycle,
-  next_billing_date: new Date().toISOString().slice(0, 10),
+  last_payment_date: new Date().toISOString().slice(0, 10),
   active: true,
 };
 
@@ -56,7 +56,7 @@ export default function Rent() {
       amount: parseFloat(form.amount),
       billing_cycle: form.billing_cycle,
       category: HOUSING_CATEGORY,
-      next_billing_date: form.next_billing_date,
+      last_payment_date: form.last_payment_date,
       active: form.active,
       notes: null,
     };
@@ -82,7 +82,7 @@ export default function Rent() {
       name: item.name,
       amount: item.amount.toString(),
       billing_cycle: item.billing_cycle,
-      next_billing_date: item.next_billing_date,
+      last_payment_date: item.last_payment_date,
       active: item.active,
     });
   }
@@ -152,7 +152,7 @@ export default function Rent() {
             </select>
           </label>
           <label>
-            Name
+            <span>Name<span className="required-asterisk">*</span></span>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -160,7 +160,7 @@ export default function Rent() {
             />
           </label>
           <label>
-            Amount
+            <span>Amount<span className="required-asterisk">*</span></span>
             <input
               type="number"
               step="0.01"
@@ -185,14 +185,19 @@ export default function Rent() {
             </select>
           </label>
           <label>
-            Next Billing Date
+            <span>Last Payment Date<span className="required-asterisk">*</span></span>
             <input
               type="date"
-              value={form.next_billing_date}
-              onChange={(e) => setForm({ ...form, next_billing_date: e.target.value })}
+              value={form.last_payment_date}
+              onChange={(e) => setForm({ ...form, last_payment_date: e.target.value })}
             />
           </label>
         </div>
+        {form.last_payment_date && (
+          <p className="muted">
+            Next bill: {addBillingInterval(form.last_payment_date, form.billing_cycle)}
+          </p>
+        )}
         <div className="field-row">
           <button type="submit">{editingId !== null ? "Save Changes" : "Add"}</button>
           {editingId !== null && (
@@ -213,6 +218,7 @@ export default function Rent() {
               <th>Amount</th>
               <th>Cycle</th>
               <th>Monthly Equivalent</th>
+              <th>Last Payment</th>
               <th>Next Bill</th>
               <th>Active</th>
               <th></th>
@@ -226,6 +232,7 @@ export default function Rent() {
                 <td>${i.amount.toFixed(2)}</td>
                 <td>{capitalize(i.billing_cycle)}</td>
                 <td>${monthlyEquivalent(i.amount, i.billing_cycle).toFixed(2)}</td>
+                <td>{i.last_payment_date}</td>
                 <td>{i.next_billing_date}</td>
                 <td>
                   <input
@@ -246,7 +253,7 @@ export default function Rent() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={9} className="muted">
                   No rent or utilities added yet.
                 </td>
               </tr>

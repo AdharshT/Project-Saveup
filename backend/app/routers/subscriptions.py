@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..auth import get_current_user
 from ..database import get_db
+from ..dateutils import advance
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
@@ -33,7 +34,10 @@ def create_subscription(
     user: models.User = Depends(get_current_user),
 ):
     _ensure_account_owned(payload.account_id, db, user)
-    sub = models.Subscription(**payload.model_dump(), user_id=user.id)
+    next_billing_date = advance(payload.last_payment_date, payload.billing_cycle)
+    sub = models.Subscription(
+        **payload.model_dump(), next_billing_date=next_billing_date, user_id=user.id
+    )
     db.add(sub)
     db.commit()
     db.refresh(sub)
@@ -66,8 +70,14 @@ def update_subscription(
     sub = _get_owned_subscription(subscription_id, db, user)
     if payload.account_id is not None:
         _ensure_account_owned(payload.account_id, db, user)
-    for field, value in payload.model_dump(exclude_unset=True).items():
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
         setattr(sub, field, value)
+
+    if "last_payment_date" in updates or "billing_cycle" in updates:
+        sub.next_billing_date = advance(sub.last_payment_date, sub.billing_cycle)
+
     db.commit()
     db.refresh(sub)
     return sub

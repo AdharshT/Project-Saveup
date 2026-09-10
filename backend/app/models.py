@@ -46,6 +46,7 @@ class Subscription(Base):
     amount = Column(Float, nullable=False)
     billing_cycle = Column(String, nullable=False)  # weekly | monthly | quarterly | yearly
     category = Column(String, nullable=True)
+    last_payment_date = Column(Date, nullable=True)
     next_billing_date = Column(Date, nullable=False)
     active = Column(Boolean, default=True, nullable=False)
     notes = Column(String, nullable=True)

@@ -1,9 +1,19 @@
+from datetime import date
+
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from . import models
 
 _TABLES_NEEDING_ACCOUNT = ["subscriptions", "incomes", "transactions"]
+
+_REGRESS_DELTA = {
+    "weekly": relativedelta(weeks=1),
+    "monthly": relativedelta(months=1),
+    "quarterly": relativedelta(months=3),
+    "yearly": relativedelta(years=1),
+}
 
 
 def _column_exists(conn, table: str, column: str) -> bool:
@@ -84,6 +94,28 @@ def _migrate_accounts_table(conn):
         )
 
 
+def _migrate_subscriptions_table(conn):
+    """Add last_payment_date, backfilled by stepping back one cycle from
+    next_billing_date for any pre-existing subscription rows."""
+    if not _column_exists(conn, "subscriptions", "last_payment_date"):
+        conn.execute(text("ALTER TABLE subscriptions ADD COLUMN last_payment_date DATE"))
+
+    rows = conn.execute(
+        text(
+            "SELECT id, next_billing_date, billing_cycle FROM subscriptions "
+            "WHERE last_payment_date IS NULL"
+        )
+    ).fetchall()
+    for sub_id, next_billing_date, billing_cycle in rows:
+        next_date = date.fromisoformat(next_billing_date)
+        delta = _REGRESS_DELTA.get(billing_cycle, relativedelta(months=1))
+        last_payment_date = next_date - delta
+        conn.execute(
+            text("UPDATE subscriptions SET last_payment_date = :lpd WHERE id = :id"),
+            {"lpd": last_payment_date.isoformat(), "id": sub_id},
+        )
+
+
 def run_migrations(engine: Engine):
     """Create any new tables, then backfill account_id on pre-existing rows.
 
@@ -96,6 +128,7 @@ def run_migrations(engine: Engine):
     with engine.begin() as conn:
         _migrate_users_table(conn)
         _migrate_accounts_table(conn)
+        _migrate_subscriptions_table(conn)
 
         for table in _TABLES_NEEDING_ACCOUNT:
             if not _column_exists(conn, table, "account_id"):
