@@ -22,6 +22,7 @@ import type {
   Subscription,
   Transaction,
 } from "../types";
+import { liveAccountBalance } from "../utils/accounts";
 import { effectiveIncomeAmount } from "../utils/income";
 import { amountDueInMonth, monthlyEquivalent } from "../utils/subscriptions";
 
@@ -248,11 +249,15 @@ export default function Dashboard() {
   const selectedAccount =
     selectedAccountId === "all" ? null : accounts.find((a) => a.id === selectedAccountId) ?? null;
   const balanceTotal = selectedAccount
-    ? selectedAccount.balance
-    : accounts.reduce((sum, a) => sum + a.balance, 0);
+    ? liveAccountBalance(selectedAccount, transactions, subscriptions)
+    : accounts.reduce((sum, a) => sum + liveAccountBalance(a, transactions, subscriptions), 0);
   const accountItems: BreakdownItem[] = selectedAccount
     ? []
-    : accounts.map((a) => ({ key: a.id, label: a.nickname, value: `$${a.balance.toFixed(2)}` }));
+    : accounts.map((a) => ({
+        key: a.id,
+        label: a.nickname,
+        value: `$${liveAccountBalance(a, transactions, subscriptions).toFixed(2)}`,
+      }));
 
   const activeIncomes = scopedIncomes.filter((i) => i.active);
   const monthlyIncomeTotal = activeIncomes.reduce(
@@ -340,6 +345,10 @@ export default function Dashboard() {
           </label>
         )}
       </div>
+      <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
+        Your financial snapshot — balance, income, subscriptions, and spending all in one place,
+        switchable to a single account with the selector above.
+      </p>
       {accounts.length === 0 && (
         <p className="muted" style={{ marginTop: "-0.75rem", marginBottom: "1.25rem" }}>
           Add a bank account on the Accounts page to start tracking balances per account.

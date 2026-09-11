@@ -123,6 +123,10 @@ export default function IncomePage() {
   return (
     <div>
       <h1>Income</h1>
+      <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
+        Add each paycheck or income source you expect, fixed or hourly, and see when your next
+        one lands.
+      </p>
 
       <div className="card">
         <h3>Upcoming Paychecks</h3>

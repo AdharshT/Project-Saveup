@@ -114,10 +114,7 @@ export default function Rent() {
     <div>
       <h1>Rent &amp; Utilities</h1>
       <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
-        Rent and each utility or fee are entered the same way as any other recurring cost —
-        a name, an amount, and how often it's billed. Anything billed less often than monthly
-        (like a yearly renters insurance premium) is automatically averaged down to a monthly
-        figure so it fits alongside the rest.
+        Rent, utilities, and fees are added as recurring costs. Bills paid less often than monthly are automatically converted into a monthly average.
       </p>
 
       <div className="card">

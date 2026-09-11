@@ -125,6 +125,9 @@ export default function Subscriptions() {
   return (
     <div>
       <h1>Subscriptions</h1>
+      <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
+        Track every recurring cost — what it charges, how often, and when the next bill hits.
+      </p>
 
       <form className="card form-grid" onSubmit={handleSubmit}>
         <h3>{editingId !== null ? "Edit Subscription" : "Add Subscription"}</h3>

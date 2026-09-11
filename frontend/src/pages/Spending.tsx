@@ -10,14 +10,15 @@ import {
   Legend,
 } from "recharts";
 import { api } from "../api/client";
-import type { Account, MonthlyComparison, Transaction } from "../types";
+import type { Account, MonthlyComparison, Subscription, Transaction } from "../types";
+import { totalLiveBalance } from "../utils/accounts";
 
 const SPENDING_CATEGORIES = [
   { group: "Essentials", options: ["Food & Dining", "Transportation", "Vehicle"] },
   { group: "Lifestyle", options: ["Shopping", "Entertainment", "Tech & Gadgets", "Hobbies"] },
   { group: "Health", options: ["Fitness", "Medical", "Personal Care"] },
   { group: "Home", options: ["Household", "Home Improvement"] },
-  { group: "Other", options: ["Travel", "Gifts & Donations", "Subscriptions", "Miscellaneous"] },
+  { group: "Other", options: ["Travel", "Gifts & Donations", "Subscriptions", "Gaming", "Miscellaneous"] },
 ] as const;
 
 const emptyForm = {
@@ -32,24 +33,29 @@ export default function Spending() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [comparison, setComparison] = useState<MonthlyComparison | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const load = () =>
-    Promise.all([api.transactions.list(), api.summary.monthly(6), api.accounts.list()]).then(
-      ([txns, monthly, accts]) => {
-        setTransactions(txns);
-        setComparison(monthly);
-        setAccounts(accts);
-        setForm((prev) =>
-          prev.account_id || accts.length === 0
-            ? prev
-            : { ...prev, account_id: accts[0].id.toString() },
-        );
-      },
-    );
+    Promise.all([
+      api.transactions.list(),
+      api.summary.monthly(6),
+      api.accounts.list(),
+      api.subscriptions.list(),
+    ]).then(([txns, monthly, accts, subs]) => {
+      setTransactions(txns);
+      setComparison(monthly);
+      setAccounts(accts);
+      setSubscriptions(subs);
+      setForm((prev) =>
+        prev.account_id || accts.length === 0
+          ? prev
+          : { ...prev, account_id: accts[0].id.toString() },
+      );
+    });
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -114,12 +120,22 @@ export default function Spending() {
   if (loading) return <p>Loading spending...</p>;
 
   const chartData = comparison?.months.map((m) => ({ month: m.month, total: m.total })) ?? [];
+  const balanceTotal = totalLiveBalance(accounts, transactions, subscriptions);
 
   return (
     <div>
       <h1>Spending</h1>
+      <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
+        Log what you spend, see it broken down by category and account, and track the monthly
+        trend over time.
+      </p>
 
       <div className="card">
+        <h3>Total Balance</h3>
+        <p className="stat">${balanceTotal.toFixed(2)}</p>
+      </div>
+
+      <div className="card" style={{ marginTop: "1rem" }}>
         <h3>Monthly Trend</h3>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={chartData}>

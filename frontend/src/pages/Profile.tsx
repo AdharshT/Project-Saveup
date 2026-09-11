@@ -43,6 +43,9 @@ export default function Profile() {
   return (
     <div>
       <h1>Profile</h1>
+      <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
+        View your account details, update your email, or log out.
+      </p>
       <div className="card" style={{ maxWidth: 420 }}>
         <form className="form-grid" onSubmit={handleSubmit} noValidate>
           <label>

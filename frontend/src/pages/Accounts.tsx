@@ -171,9 +171,7 @@ export default function Accounts() {
     <div>
       <h1>Accounts</h1>
       <p className="muted" style={{ marginTop: "-1rem", marginBottom: "1.25rem" }}>
-        Add each bank you use, then add an account under it for every place your money lives.
-        Subscriptions, income, and spending are each assigned to one account, so the Dashboard
-        can show you totals for a single account or everything combined.
+        Add your banks and accounts, then assign income, spending, and subscriptions to each. The Dashboard shows totals by account or combined.
       </p>
 
       <div className="card">
