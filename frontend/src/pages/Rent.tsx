@@ -207,6 +207,7 @@ export default function Rent() {
 
       <div className="card" style={{ marginTop: "1rem" }}>
         <h3>Rent &amp; Utilities</h3>
+        <div className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -257,6 +258,7 @@ export default function Rent() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

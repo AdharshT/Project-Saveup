@@ -227,6 +227,7 @@ export default function Spending() {
 
       <div className="card" style={{ marginTop: "1rem" }}>
         <h3>Recent Transactions</h3>
+        <div className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -265,6 +266,7 @@ export default function Spending() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

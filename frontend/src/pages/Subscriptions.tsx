@@ -232,6 +232,7 @@ export default function Subscriptions() {
           <h3>All Subscriptions</h3>
           <span className="muted">Active total: ${activeTotal.toFixed(2)}</span>
         </div>
+        <div className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -282,6 +283,7 @@ export default function Subscriptions() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

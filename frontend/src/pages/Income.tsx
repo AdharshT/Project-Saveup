@@ -277,6 +277,7 @@ export default function IncomePage() {
 
       <div className="card" style={{ marginTop: "1rem" }}>
         <h3>All Income Sources</h3>
+        <div className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -329,6 +330,7 @@ export default function IncomePage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

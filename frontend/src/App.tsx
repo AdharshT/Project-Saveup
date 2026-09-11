@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import Dashboard from "./pages/Dashboard";
@@ -40,6 +40,11 @@ const PUBLIC_PATHS = ["/", "/signup", "/login", "/forgot-password"];
 function App() {
   const location = useLocation();
   const { user, ready } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   if (PUBLIC_PATHS.includes(location.pathname)) {
     return (
@@ -56,8 +61,27 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <header className="mobile-topbar">
         <Link to="/" className="brand-link">
+          <img src={logo} alt="Saveup" className="brand-logo" />
+        </Link>
+        <button
+          type="button"
+          className={menuOpen ? "hamburger-btn open" : "hamburger-btn"}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((prev) => !prev)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      </header>
+      {menuOpen && (
+        <div className="sidebar-overlay" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+      )}
+      <aside className={menuOpen ? "sidebar open" : "sidebar"}>
+        <Link to="/" className="brand-link sidebar-brand">
           <img src={logo} alt="Saveup" className="brand-logo" />
         </Link>
         <nav>

@@ -316,6 +316,7 @@ export default function Accounts() {
 
       <div className="card" style={{ marginTop: "1rem" }}>
         <h3>All Accounts</h3>
+        <div className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -352,6 +353,7 @@ export default function Accounts() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
