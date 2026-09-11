@@ -20,7 +20,7 @@ app = FastAPI(title="Budget Tracker API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}):\d+",
+    allow_origin_regex=r"http://(localhost|[\w-]+\.local|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
