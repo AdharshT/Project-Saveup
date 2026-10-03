@@ -7,6 +7,12 @@ SQLALCHEMY_DATABASE_URL = os.environ.get(
     "SAVEUP_DATABASE_URL", "sqlite:///./budget.db"
 )
 
+# Use pg8000 driver for PostgreSQL (pure Python, no compilation needed)
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
+        "postgresql://", "postgresql+pg8000://", 1
+    )
+
 connect_args = (
     {"check_same_thread": False}
     if SQLALCHEMY_DATABASE_URL.startswith("sqlite")
