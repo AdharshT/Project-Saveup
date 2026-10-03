@@ -1,4 +1,5 @@
 import os
+import ssl
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -16,7 +17,10 @@ if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 elif SQLALCHEMY_DATABASE_URL.startswith("postgresql+pg8000"):
-    connect_args = {"ssl_context": None}
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    connect_args = {"ssl_context": ssl_context}
 else:
     connect_args = {}
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
