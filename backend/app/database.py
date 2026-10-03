@@ -13,11 +13,12 @@ if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
         "postgresql://", "postgresql+pg8000://", 1
     )
 
-connect_args = (
-    {"check_same_thread": False}
-    if SQLALCHEMY_DATABASE_URL.startswith("sqlite")
-    else {}
-)
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+elif SQLALCHEMY_DATABASE_URL.startswith("postgresql+pg8000"):
+    connect_args = {"ssl_context": None}
+else:
+    connect_args = {}
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
