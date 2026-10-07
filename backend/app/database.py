@@ -5,7 +5,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 SQLALCHEMY_DATABASE_URL = os.environ.get(
     "SAVEUP_DATABASE_URL", "sqlite:///./budget.db"
-)
+).strip()
 
 connect_args = (
     {"check_same_thread": False}
