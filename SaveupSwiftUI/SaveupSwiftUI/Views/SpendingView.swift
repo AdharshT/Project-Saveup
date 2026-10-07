@@ -13,13 +13,14 @@ struct SpendingView: View {
     @State private var transactions: [Transaction] = []
     @State private var accounts: [Account] = []
     @State private var subscriptions: [Subscription] = []
+    @State private var incomes: [Income] = []
     @State private var comparison: MonthlyComparison?
     @State private var isLoading = true
     @State private var showAddForm = false
     @State private var editingTransaction: Transaction?
 
     private var balanceTotal: Double {
-        totalLiveBalance(accounts, transactions: transactions, subscriptions: subscriptions)
+        totalLiveBalance(accounts, transactions: transactions, subscriptions: subscriptions, incomes: incomes)
     }
     private var chartData: [(month: String, total: Double)] {
         (comparison?.months ?? []).map { ($0.month, $0.total) }
@@ -80,11 +81,13 @@ struct SpendingView: View {
         async let m = try? SummaryAPI.monthly(months: 6)
         async let a = try? AccountsAPI.list()
         async let s = try? SubscriptionsAPI.list()
-        let (txns, monthly, accts, subs) = await (t, m, a, s)
+        async let i = try? IncomesAPI.list()
+        let (txns, monthly, accts, subs, inc) = await (t, m, a, s, i)
         transactions = txns ?? []
         comparison = monthly
         accounts = accts ?? []
         subscriptions = subs ?? []
+        incomes = inc ?? []
         isLoading = false
     }
 }
@@ -107,7 +110,9 @@ private struct TransactionRow: View {
             }
             Spacer()
             Text(formatCurrency(txn.amount)).font(.subheadline.weight(.medium))
-            Button("Edit", action: onEdit).font(.footnote).foregroundStyle(.accentColor)
+            Button("Edit", action: onEdit)
+                .font(.footnote).foregroundStyle(Color.accentColor)
+                .buttonStyle(.borderless)
         }
     }
 }
@@ -119,7 +124,7 @@ struct TransactionFormSheet: View {
     let accounts: [Account]
     let onSave: () async -> Void
     @Environment(\.dismiss) var dismiss
-    @State private var selectedAccount: Account?
+    @State private var selectedAccountId: Int = -1
     @State private var description = ""
     @State private var amount = ""
     @State private var category = spendingCategories[0].options[0]
@@ -131,10 +136,20 @@ struct TransactionFormSheet: View {
         NavigationStack {
             Form {
                 if let err = error { Text(err).foregroundStyle(.red).font(.footnote) }
-                Section {
-                    Picker("Account", selection: $selectedAccount) {
-                        ForEach(accounts) { a in Text(a.nickname).tag(Optional(a)) }
+                Section("Account") {
+                    ForEach(accounts) { a in
+                        HStack {
+                            Text(a.nickname).foregroundStyle(.primary)
+                            Spacer()
+                            if selectedAccountId == a.id {
+                                Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { selectedAccountId = a.id }
                     }
+                }
+                Section {
                     TextField("Description (e.g. Groceries)", text: $description)
                     TextField("Amount", text: $amount).keyboardType(.decimalPad)
                     Picker("Category", selection: $category) {
@@ -156,9 +171,8 @@ struct TransactionFormSheet: View {
                 }
             }
             .onAppear {
-                selectedAccount = accounts.first
+                selectedAccountId = editing?.accountId ?? accounts.first?.id ?? -1
                 if let t = editing {
-                    selectedAccount = accounts.first { $0.id == t.accountId }
                     description = t.description; amount = String(t.amount)
                     category = t.category ?? spendingCategories[0].options[0]
                     date = parseISODate(t.date) ?? Date()
@@ -172,7 +186,7 @@ struct TransactionFormSheet: View {
         let trimDesc = description.trimmingCharacters(in: .whitespaces)
         let amt = Double(amount)
         if trimDesc.isEmpty || amt == nil { error = "Description and amount are required."; return }
-        guard let acct = selectedAccount else { error = "Add an account first."; return }
+        guard let acct = accounts.first(where: { $0.id == selectedAccountId }) ?? accounts.first else { error = "Add an account first."; return }
         let input = TransactionInput(accountId: acct.id, description: trimDesc, amount: amt!, category: category, date: formatISODate(date))
         isSaving = true
         do {

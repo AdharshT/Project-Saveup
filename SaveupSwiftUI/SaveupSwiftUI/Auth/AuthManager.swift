@@ -16,8 +16,12 @@ final class AuthManager: ObservableObject {
         }
         do {
             user = try await AuthAPI.me()
-        } catch {
+        } catch let error as APIError {
+            // Only clear the token for server-side auth errors, not network failures.
             KeychainHelper.deleteToken()
+            _ = error
+        } catch {
+            // Network error — keep the token so the user stays logged in when connectivity returns.
         }
         ready = true
     }

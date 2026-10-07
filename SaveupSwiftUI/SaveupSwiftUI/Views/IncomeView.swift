@@ -84,7 +84,9 @@ private struct IncomeRow: View {
                 }
                 Text("next: \(income.nextPayDate)").font(.caption).foregroundStyle(.secondary)
             }
-            Button("Edit", action: onEdit).font(.footnote).foregroundStyle(.accentColor)
+            Button("Edit", action: onEdit)
+                .font(.footnote).foregroundStyle(Color.accentColor)
+                .buttonStyle(.borderless)
         }
     }
 }
@@ -93,10 +95,16 @@ private struct IncomeRow: View {
 
 struct IncomeFormSheet: View {
     var editing: Income? = nil
-    let accounts: [Account]
+    @State private var accounts: [Account]
     let onSave: () async -> Void
     @Environment(\.dismiss) var dismiss
-    @State private var selectedAccount: Account?
+    @State private var selectedAccountId: Int = -1
+
+    init(editing: Income? = nil, accounts: [Account], onSave: @escaping () async -> Void) {
+        self.editing = editing
+        self._accounts = State(initialValue: accounts)
+        self.onSave = onSave
+    }
     @State private var source = ""
     @State private var payType: PayType = .fixed
     @State private var amount = ""
@@ -120,10 +128,18 @@ struct IncomeFormSheet: View {
         NavigationStack {
             Form {
                 if let err = error { Text(err).foregroundStyle(.red).font(.footnote) }
-                Section {
-                    Picker("Account", selection: $selectedAccount) {
-                        ForEach(accounts) { a in Text(a.nickname).tag(Optional(a)) }
+                Section("Account") {
+                    if accounts.isEmpty {
+                        Text("Loading accounts…").foregroundStyle(.secondary).font(.footnote)
+                    } else {
+                        Picker("Account", selection: $selectedAccountId) {
+                            ForEach(accounts) { a in
+                                Text(a.nickname).tag(a.id)
+                            }
+                        }
                     }
+                }
+                Section {
                     TextField("Source (e.g. Main Job)", text: $source)
                     Picker("Pay Type", selection: $payType) {
                         ForEach(PayType.allCases) { t in Text(t.displayName).tag(t) }
@@ -168,10 +184,17 @@ struct IncomeFormSheet: View {
                     Button("Save") { Task { await save() } }.disabled(isSaving)
                 }
             }
+            .task {
+                if accounts.isEmpty {
+                    accounts = (try? await AccountsAPI.list()) ?? []
+                }
+                if selectedAccountId == -1 {
+                    selectedAccountId = editing?.accountId ?? accounts.first?.id ?? -1
+                }
+            }
             .onAppear {
-                selectedAccount = accounts.first
+                selectedAccountId = editing?.accountId ?? accounts.first?.id ?? -1
                 if let i = editing {
-                    selectedAccount = accounts.first { $0.id == i.accountId }
                     source = i.source; payType = i.payType
                     amount = String(i.amount)
                     hoursPerPeriod = i.hoursPerPeriod.map { String($0) } ?? ""
@@ -193,7 +216,7 @@ struct IncomeFormSheet: View {
         if payType == .hourly && Double(hoursPerPeriod) == nil {
             error = "Hours per pay period is required for hourly pay."; return
         }
-        guard let acct = selectedAccount else { error = "Add an account first."; return }
+        guard let acct = accounts.first(where: { $0.id == selectedAccountId }) ?? accounts.first else { error = "Add an account first."; return }
         let input = IncomeInput(
             accountId: acct.id, source: trimSource, amount: amt!,
             frequency: frequency, payType: payType,

@@ -1,7 +1,7 @@
 import Foundation
 
 // Change this to point at your server. Localhost works in the iOS Simulator.
-let apiBaseURL = "http://localhost:8000"
+let apiBaseURL = "https://project-saveup-production.up.railway.app"
 
 enum APIError: LocalizedError {
     case invalidResponse
@@ -39,9 +39,10 @@ private func request<T: Decodable>(
     guard let url = URL(string: apiBaseURL + path) else {
         throw APIError.serverError("Invalid URL")
     }
-    var req = URLRequest(url: url)
+    var req = URLRequest(url: url, timeoutInterval: 15)
     req.httpMethod = method
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
     if let token = KeychainHelper.getToken() {
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     }
@@ -70,9 +71,10 @@ private func requestVoid(
     guard let url = URL(string: apiBaseURL + path) else {
         throw APIError.serverError("Invalid URL")
     }
-    var req = URLRequest(url: url)
+    var req = URLRequest(url: url, timeoutInterval: 15)
     req.httpMethod = method
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
     if let token = KeychainHelper.getToken() {
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     }

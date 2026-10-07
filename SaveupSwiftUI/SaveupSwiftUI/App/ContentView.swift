@@ -28,14 +28,14 @@ struct AuthNavigationView: View {
 }
 
 enum AppTab: String, CaseIterable, Identifiable {
-    case dashboard    = "Dashboard"
-    case accounts     = "Accounts"
+    case dashboard     = "Dashboard"
+    case accounts      = "Accounts"
+    case income        = "Income"
+    case spending      = "Spending"
     case subscriptions = "Subscriptions"
-    case rent         = "Rent & Utilities"
-    case income       = "Income"
-    case spending     = "Spending"
+    case rent          = "Rent & Utilities"
     case affordability = "Can I Afford This?"
-    case profile      = "Profile"
+    case profile       = "Profile"
 
     var id: String { rawValue }
 
@@ -55,7 +55,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     @ViewBuilder
     var destination: some View {
         switch self {
-        case .dashboard:     DashboardView()
+        case .dashboard:     EmptyView()
         case .accounts:      AccountsView()
         case .subscriptions: SubscriptionsView()
         case .rent:          RentView()
@@ -68,47 +68,37 @@ enum AppTab: String, CaseIterable, Identifiable {
 }
 
 struct MainNavigationView: View {
-    @State private var selectedTab: AppTab? = .dashboard
+    @State private var selectedTab: AppTab = .dashboard
     @EnvironmentObject var auth: AuthManager
+    @StateObject private var dashboardStore = DashboardStore()
 
     var body: some View {
-        NavigationSplitView {
-            List(AppTab.allCases, selection: $selectedTab) { tab in
-                Label(tab.rawValue, systemImage: tab.systemImage)
-                    .tag(tab)
-            }
-            .navigationTitle("Saveup")
-            .safeAreaInset(edge: .bottom) {
-                if let user = auth.user {
-                    HStack(spacing: 10) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.accentColor)
-                                .frame(width: 32, height: 32)
-                            Text(getInitials(user.name))
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.white)
-                        }
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(user.name).font(.subheadline.weight(.medium))
-                            Text(user.email).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(.bar)
-                }
-            }
-        } detail: {
-            if let tab = selectedTab {
+        TabView(selection: $selectedTab) {
+            ForEach(AppTab.allCases) { tab in
                 NavigationStack {
-                    tab.destination
+                    tabView(for: tab)
                         .navigationTitle(tab.rawValue)
                 }
-            } else {
-                ContentUnavailableView("Select a Section", systemImage: "sidebar.left")
+                .tabItem {
+                    Label(tab.rawValue, systemImage: tab.systemImage)
+                }
+                .tag(tab)
             }
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == .dashboard {
+                Task { await dashboardStore.loadAll() }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tabView(for tab: AppTab) -> some View {
+        switch tab {
+        case .dashboard:
+            DashboardView(store: dashboardStore)
+        default:
+            tab.destination
         }
     }
 }

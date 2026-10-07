@@ -1,7 +1,13 @@
 import SwiftUI
 
+private struct BasketEntry {
+    let id = UUID()
+    var name: String
+    var price: Double
+}
+
 struct AffordabilityView: View {
-    @State private var basket: [(id: UUID, name: String, price: Double)] = []
+    @State private var basket: [BasketEntry] = []
     @State private var itemName = ""
     @State private var itemPrice = ""
     @State private var editingBasketId: UUID? = nil
@@ -13,7 +19,7 @@ struct AffordabilityView: View {
     @State private var historyLoading = true
     @State private var expandedHistoryId: Int? = nil
 
-    private var basketTotal: Double { basket.reduce(0) { $0 + $1.price } }
+    private var basketTotal: Double { basket.reduce(0.0) { $0 + $1.price } }
 
     var body: some View {
         ScrollView {
@@ -53,13 +59,13 @@ struct AffordabilityView: View {
                             Text("Your basket is empty.")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
-                        ForEach(basket, id: \.id) { item in
+                        ForEach(basket, id: \.id) { (item: BasketEntry) in
                             HStack {
                                 Text(item.name).font(.subheadline)
                                 Spacer()
                                 Text(formatCurrency(item.price)).font(.subheadline)
                                 Button("Edit") { startEditItem(item) }
-                                    .font(.footnote).foregroundStyle(.accentColor)
+                                    .font(.footnote).foregroundStyle(Color.accentColor)
                                 Button("Remove") { removeItem(item.id) }
                                     .font(.footnote).foregroundStyle(.red)
                             }
@@ -121,17 +127,18 @@ struct AffordabilityView: View {
             addError = "Item name and price are required."
             return
         }
-        if let editId = editingBasketId {
-            basket = basket.map { $0.id == editId ? (editId, name, price) : $0 }
+        if let editId = editingBasketId, let idx = basket.firstIndex(where: { $0.id == editId }) {
+            basket[idx].name = name
+            basket[idx].price = price
             editingBasketId = nil
         } else {
-            basket.append((UUID(), name, price))
+            basket.append(BasketEntry(name: name, price: price))
         }
         itemName = ""; itemPrice = ""
         result = nil
     }
 
-    private func startEditItem(_ item: (id: UUID, name: String, price: Double)) {
+    private func startEditItem(_ item: BasketEntry) {
         editingBasketId = item.id
         itemName = item.name
         itemPrice = String(item.price)

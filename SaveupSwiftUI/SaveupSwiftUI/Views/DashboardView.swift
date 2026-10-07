@@ -20,11 +20,11 @@ final class DashboardStore: ObservableObject {
         async let txns = try? TransactionsAPI.list()
         async let accts = try? AccountsAPI.list()
         let (s, i, n, t, a) = await (subs, inc, next, txns, accts)
-        subscriptions = s ?? []
-        incomes = i ?? []
-        nextPaychecks = n ?? []
-        transactions = t ?? []
-        accounts = a ?? []
+        if let s { subscriptions = s }
+        if let i { incomes = i }
+        if let n { nextPaychecks = n }
+        if let t { transactions = t }
+        if let a { accounts = a }
         try? await loadComparison(selectedAccountId: selectedAccountId)
         isLoading = false
         hasLoaded = true
@@ -69,9 +69,9 @@ struct DashboardView: View {
 
     private var balanceTotal: Double {
         if let a = selectedAccount {
-            return liveAccountBalance(a, transactions: store.transactions, subscriptions: store.subscriptions)
+            return liveAccountBalance(a, transactions: store.transactions, subscriptions: store.subscriptions, incomes: store.incomes)
         }
-        return totalLiveBalance(store.accounts, transactions: store.transactions, subscriptions: store.subscriptions)
+        return totalLiveBalance(store.accounts, transactions: store.transactions, subscriptions: store.subscriptions, incomes: store.incomes)
     }
     private var activeIncomes: [Income] { scopedIncomes.filter { $0.active } }
     private var monthlyIncomeTotal: Double {
@@ -109,6 +109,7 @@ struct DashboardView: View {
             }
         }
         .task { await store.loadAll(selectedAccountId: selectedAccountId) }
+        .onAppear { Task { await store.loadAll(selectedAccountId: selectedAccountId) } }
     }
 
     private var dashboardContent: some View {
@@ -221,6 +222,7 @@ struct DashboardView: View {
             }
             .padding()
         }
+        .refreshable { await store.loadAll(selectedAccountId: selectedAccountId) }
     }
 
     // MARK: Card item helpers
@@ -228,7 +230,7 @@ struct DashboardView: View {
     private var accountCardItems: [(label: String, value: String)] {
         guard selectedAccount == nil else { return [] }
         return store.accounts.map { a in
-            (a.nickname, formatCurrency(liveAccountBalance(a, transactions: store.transactions, subscriptions: store.subscriptions)))
+            (a.nickname, formatCurrency(liveAccountBalance(a, transactions: store.transactions, subscriptions: store.subscriptions, incomes: store.incomes)))
         }
     }
     private var incomeCardItems: [(label: String, value: String)] {

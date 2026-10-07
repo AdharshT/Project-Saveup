@@ -35,7 +35,7 @@ enum PayType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-struct Bank: Codable, Identifiable, Equatable {
+struct Bank: Codable, Identifiable, Equatable, Hashable {
     let id: Int
     let name: String
     let createdAt: String
@@ -47,7 +47,7 @@ enum AccountType: String, Codable, CaseIterable, Identifiable {
     var displayName: String { rawValue.capitalized }
 }
 
-struct Account: Codable, Identifiable, Equatable {
+struct Account: Codable, Identifiable, Equatable, Hashable {
     let id: Int
     let bankId: Int
     let nickname: String

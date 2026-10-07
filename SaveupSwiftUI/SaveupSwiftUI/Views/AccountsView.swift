@@ -8,6 +8,9 @@ private let bankPresets = [
 struct AccountsView: View {
     @State private var accounts: [Account] = []
     @State private var banks: [Bank] = []
+    @State private var transactions: [Transaction] = []
+    @State private var subscriptions: [Subscription] = []
+    @State private var incomes: [Income] = []
     @State private var isLoading = true
     @State private var showAddBank = false
     @State private var showAddAccount = false
@@ -16,7 +19,12 @@ struct AccountsView: View {
     @State private var bankError: String?
     @State private var accountError: String?
 
-    private var totalBalance: Double { accounts.reduce(0) { $0 + $1.balance } }
+    private var totalBalance: Double {
+        totalLiveBalance(accounts, transactions: transactions, subscriptions: subscriptions, incomes: incomes)
+    }
+    private func liveBalance(_ account: Account) -> Double {
+        liveAccountBalance(account, transactions: transactions, subscriptions: subscriptions, incomes: incomes)
+    }
 
     var body: some View {
         Group {
@@ -42,7 +50,8 @@ struct AccountsView: View {
                                 Text(bank.name)
                                 Spacer()
                                 Button("Edit") { editingBank = bank }
-                                    .font(.footnote).foregroundStyle(.accentColor)
+                                    .font(.footnote).foregroundStyle(Color.accentColor)
+                                    .buttonStyle(.borderless)
                             }
                         }
                         .onDelete { offsets in
@@ -64,13 +73,16 @@ struct AccountsView: View {
                                     }
                                 }
                                 Spacer()
-                                Text(formatCurrency(account.balance)).font(.subheadline.weight(.medium))
+                                Text(formatCurrency(liveBalance(account))).font(.subheadline.weight(.medium))
                                 Button("Edit") { editingAccount = account }
-                                    .font(.footnote).foregroundStyle(.accentColor)
+                                    .font(.footnote).foregroundStyle(Color.accentColor)
+                                    .buttonStyle(.borderless)
                             }
                         }
                         .onDelete { offsets in
-                            Task { for i in offsets { try? await AccountsAPI.remove(id: accounts[i].id) }; await load() }
+                            let removedIds = Set(offsets.map { accounts[$0].id })
+                            accounts.removeAll { removedIds.contains($0.id) }
+                            Task { for id in removedIds { try? await AccountsAPI.remove(id: id) }; await load() }
                         }
                         Button { showAddAccount = true } label: {
                             Label("Add Account", systemImage: "plus")
@@ -91,9 +103,15 @@ struct AccountsView: View {
     func load() async {
         async let a = try? AccountsAPI.list()
         async let b = try? BanksAPI.list()
-        let (accts, bnks) = await (a, b)
+        async let t = try? TransactionsAPI.list()
+        async let s = try? SubscriptionsAPI.list()
+        async let i = try? IncomesAPI.list()
+        let (accts, bnks, txns, subs, inc) = await (a, b, t, s, i)
         accounts = accts ?? []
         banks = bnks ?? []
+        transactions = txns ?? []
+        subscriptions = subs ?? []
+        incomes = inc ?? []
         isLoading = false
     }
 }
@@ -179,9 +197,13 @@ struct AccountFormSheet: View {
             Form {
                 if let err = error { Text(err).foregroundStyle(.red).font(.footnote) }
                 Section {
-                    Picker("Bank", selection: $selectedBank) {
-                        ForEach(banks) { b in Text(b.name).tag(Optional(b)) }
+                    Picker("Bank", selection: Binding(
+                        get: { selectedBank ?? banks.first ?? Bank(id: 0, name: "", createdAt: "") },
+                        set: { selectedBank = $0 }
+                    )) {
+                        ForEach(banks) { b in Text(b.name).tag(b) }
                     }
+                    .pickerStyle(.menu)
                     Picker("Type", selection: $accountType) {
                         ForEach(AccountType.allCases) { t in Text(t.displayName).tag(t) }
                     }
@@ -213,7 +235,7 @@ struct AccountFormSheet: View {
 
     private func save() async {
         error = nil
-        guard let bank = selectedBank else { error = "Select a bank."; return }
+        guard let bank = selectedBank ?? banks.first else { error = "Add a bank first."; return }
         let bal = Double(balance) ?? 0
         let l4 = last4.trimmingCharacters(in: .whitespaces)
         let nickname = l4.isEmpty ? bank.name : "\(bank.name) ••\(l4)"
@@ -229,6 +251,3 @@ struct AccountFormSheet: View {
     }
 }
 
-extension Bank: Equatable {
-    public static func == (lhs: Bank, rhs: Bank) -> Bool { lhs.id == rhs.id }
-}

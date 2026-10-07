@@ -96,7 +96,9 @@ private struct SubscriptionRow: View {
                 Toggle("", isOn: Binding(get: { sub.active }, set: { _ in onToggle() }))
                     .labelsHidden()
                     .scaleEffect(0.8)
-                Button("Edit", action: onEdit).font(.footnote).foregroundStyle(.accentColor)
+                Button("Edit", action: onEdit)
+                    .font(.footnote).foregroundStyle(Color.accentColor)
+                    .buttonStyle(.borderless)
             }
         }
     }
@@ -106,10 +108,16 @@ private struct SubscriptionRow: View {
 
 struct SubscriptionFormSheet: View {
     var editing: Subscription? = nil
-    let accounts: [Account]
+    @State private var accounts: [Account]
     let onSave: () async -> Void
     @Environment(\.dismiss) var dismiss
-    @State private var selectedAccount: Account?
+    @State private var selectedAccountId: Int = -1
+
+    init(editing: Subscription? = nil, accounts: [Account], onSave: @escaping () async -> Void) {
+        self.editing = editing
+        self._accounts = State(initialValue: accounts)
+        self.onSave = onSave
+    }
     @State private var name = ""
     @State private var amount = ""
     @State private var billingCycle: BillingCycle = .monthly
@@ -128,10 +136,18 @@ struct SubscriptionFormSheet: View {
         NavigationStack {
             Form {
                 if let err = error { Text(err).foregroundStyle(.red).font(.footnote) }
-                Section {
-                    Picker("Account", selection: $selectedAccount) {
-                        ForEach(accounts) { a in Text(a.nickname).tag(Optional(a)) }
+                Section("Account") {
+                    if accounts.isEmpty {
+                        Text("Loading accounts…").foregroundStyle(.secondary).font(.footnote)
+                    } else {
+                        Picker("Account", selection: $selectedAccountId) {
+                            ForEach(accounts) { a in
+                                Text(a.nickname).tag(a.id)
+                            }
+                        }
                     }
+                }
+                Section {
                     TextField("Name (e.g. Netflix)", text: $name)
                     TextField("Amount", text: $amount).keyboardType(.decimalPad)
                     Picker("Billing Cycle", selection: $billingCycle) {
@@ -161,10 +177,17 @@ struct SubscriptionFormSheet: View {
                     Button("Save") { Task { await save() } }.disabled(isSaving)
                 }
             }
+            .task {
+                if accounts.isEmpty {
+                    accounts = (try? await AccountsAPI.list()) ?? []
+                }
+                if selectedAccountId == -1 {
+                    selectedAccountId = editing?.accountId ?? accounts.first?.id ?? -1
+                }
+            }
             .onAppear {
-                selectedAccount = accounts.first
+                selectedAccountId = editing?.accountId ?? accounts.first?.id ?? -1
                 if let s = editing {
-                    selectedAccount = accounts.first { $0.id == s.accountId }
                     name = s.name
                     amount = String(s.amount)
                     billingCycle = s.billingCycle
@@ -182,7 +205,7 @@ struct SubscriptionFormSheet: View {
         let trimName = name.trimmingCharacters(in: .whitespaces)
         let amt = Double(amount)
         if trimName.isEmpty || amt == nil { error = "Name and amount are required."; return }
-        guard let acct = selectedAccount else { error = "Add an account first."; return }
+        guard let acct = accounts.first(where: { $0.id == selectedAccountId }) ?? accounts.first else { error = "Add an account first."; return }
         let input = SubscriptionInput(
             accountId: acct.id, name: trimName, amount: amt!,
             billingCycle: billingCycle, category: category,
