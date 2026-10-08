@@ -81,10 +81,15 @@ private func requestVoid(
     if let body {
         req.httpBody = try encoder.encode(body)
     }
-    let (_, response) = try await URLSession.shared.data(for: req)
-    guard let http = response as? HTTPURLResponse,
-          (200..<300).contains(http.statusCode) else {
-        throw APIError.serverError("\(method) \(path) failed")
+    let (data, response) = try await URLSession.shared.data(for: req)
+    guard let http = response as? HTTPURLResponse else {
+        throw APIError.invalidResponse
+    }
+    if !(200..<300).contains(http.statusCode) {
+        let detail = (try? decoder.decode(APIErrorBody.self, from: data))?.detail
+            ?? String(data: data, encoding: .utf8)
+            ?? "\(method) \(path) failed: \(http.statusCode)"
+        throw APIError.serverError(detail)
     }
 }
 
