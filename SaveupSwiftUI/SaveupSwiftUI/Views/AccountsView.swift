@@ -18,6 +18,7 @@ struct AccountsView: View {
     @State private var editingAccount: Account?
     @State private var bankError: String?
     @State private var accountError: String?
+    @State private var deleteError: String?
 
     private var totalBalance: Double {
         totalLiveBalance(accounts, transactions: transactions, subscriptions: subscriptions, incomes: incomes)
@@ -55,7 +56,13 @@ struct AccountsView: View {
                             }
                         }
                         .onDelete { offsets in
-                            Task { for i in offsets { try? await BanksAPI.remove(id: banks[i].id) }; await load() }
+                            Task {
+                                for i in offsets {
+                                    do { try await BanksAPI.remove(id: banks[i].id) }
+                                    catch { deleteError = error.localizedDescription }
+                                }
+                                await load()
+                            }
                         }
                         Button { showAddBank = true } label: {
                             Label("Add Bank", systemImage: "plus")
@@ -82,7 +89,13 @@ struct AccountsView: View {
                         .onDelete { offsets in
                             let removedIds = Set(offsets.map { accounts[$0].id })
                             accounts.removeAll { removedIds.contains($0.id) }
-                            Task { for id in removedIds { try? await AccountsAPI.remove(id: id) }; await load() }
+                            Task {
+                                for id in removedIds {
+                                    do { try await AccountsAPI.remove(id: id) }
+                                    catch { deleteError = error.localizedDescription }
+                                }
+                                await load()
+                            }
                         }
                         Button { showAddAccount = true } label: {
                             Label("Add Account", systemImage: "plus")
@@ -94,6 +107,11 @@ struct AccountsView: View {
             }
         }
         .task { await load() }
+        .alert("Could Not Delete", isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })) {
+            Button("OK") { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
+        }
         .sheet(isPresented: $showAddBank) { BankFormSheet(banks: banks, onSave: { await load() }) }
         .sheet(item: $editingBank) { bank in BankFormSheet(editing: bank, banks: banks, onSave: { await load() }) }
         .sheet(isPresented: $showAddAccount) { AccountFormSheet(banks: banks, onSave: { await load() }) }

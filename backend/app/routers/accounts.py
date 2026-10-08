@@ -70,17 +70,9 @@ def delete_account(
 ):
     account = _get_owned_account(account_id, db, user)
 
-    in_use = (
-        db.query(models.Subscription).filter(models.Subscription.account_id == account_id).first()
-        or db.query(models.Income).filter(models.Income.account_id == account_id).first()
-        or db.query(models.Transaction).filter(models.Transaction.account_id == account_id).first()
-    )
-    if in_use:
-        raise HTTPException(
-            status_code=409,
-            detail="This account still has subscriptions, income, or transactions assigned to it. "
-            "Move or delete those first.",
-        )
+    db.query(models.Transaction).filter(models.Transaction.account_id == account_id).delete(synchronize_session=False)
+    db.query(models.Subscription).filter(models.Subscription.account_id == account_id).delete(synchronize_session=False)
+    db.query(models.Income).filter(models.Income.account_id == account_id).delete(synchronize_session=False)
 
     db.delete(account)
     db.commit()
