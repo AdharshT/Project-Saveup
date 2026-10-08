@@ -14,3 +14,7 @@ frontend/.env.local
 # Editor / OS
 .DS_Store
 *.log
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
