@@ -17,6 +17,7 @@ struct SpendingView: View {
     @State private var comparison: MonthlyComparison?
     @State private var isLoading = true
     @State private var showAddForm = false
+    @State private var showImportCSV = false
     @State private var editingTransaction: Transaction?
 
     private var balanceTotal: Double {
@@ -66,6 +67,7 @@ struct SpendingView: View {
                             Task { for i in offsets { try? await TransactionsAPI.remove(id: transactions[i].id) }; await load() }
                         }
                         Button { showAddForm = true } label: { Label("Log Spending", systemImage: "plus") }
+                        Button { showImportCSV = true } label: { Label("Import from Bank CSV", systemImage: "arrow.down.doc") }
                     } header: { Text("Recent Transactions") }
                 }
                 .listStyle(.insetGrouped)
@@ -73,6 +75,7 @@ struct SpendingView: View {
         }
         .task { await load() }
         .sheet(isPresented: $showAddForm) { TransactionFormSheet(accounts: accounts, onSave: { await load() }) }
+        .sheet(isPresented: $showImportCSV) { ImportTransactionsView(accounts: accounts, onImport: { await load() }) }
         .sheet(item: $editingTransaction) { txn in TransactionFormSheet(editing: txn, accounts: accounts, onSave: { await load() }) }
     }
 

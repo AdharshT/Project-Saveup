@@ -11,8 +11,10 @@
 		1447D817AB3F22EDB6F63F05 /* SpendingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C18518EF98988D0E60C0D8F /* SpendingView.swift */; };
 		1FA5A7CCDC6FCD70B12EE4BC /* IncomeUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25368E3FD7B4990FEF0DFB1 /* IncomeUtils.swift */; };
 		20138290897312AB32BACBBC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB149B6A95F2FB584D553F7 /* APIClient.swift */; };
+		20BB8B381FF7A02225AE6364 /* CSVImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8CF6D85095524A2F1BAF82 /* CSVImporter.swift */; };
 		3F6A12B536F0F3F8343187CD /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36B3C5E6069B9EE85479DEE3 /* KeychainHelper.swift */; };
 		4845605E82E8949BDD9C4146 /* SubscriptionUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10CEA2C8AA6D571DB31ADCF9 /* SubscriptionUtils.swift */; };
+		485737123FCAAE6EF16107CF /* ImportTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11C6403F888D65D008F1DA1 /* ImportTransactionsView.swift */; };
 		531F109469A0ADEC90954CF7 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78809CC50AD04E57D4E2F84 /* Models.swift */; };
 		5440B7DDDA813A3A2A3C335B /* RentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFCC5F16C1E2FE8F858FB54 /* RentView.swift */; };
 		59CF26678ABA7E582755B4AE /* IncomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46350843AE63DC3B10D81685 /* IncomeView.swift */; };
@@ -44,12 +46,14 @@
 		46350843AE63DC3B10D81685 /* IncomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomeView.swift; sourceTree = "<group>"; };
 		47571EAE7AD06C3E353E6431 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		4FB9E6855FE9A0B871A5E33C /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
-		61CBD928D0C89F50066EEA1A /* SaveupSwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SaveupSwiftUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		61CBD928D0C89F50066EEA1A /* SaveupSwiftUI.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SaveupSwiftUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8970BB36EA21904582CD608E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		89E0423649F783E759CB2FA4 /* AffordabilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffordabilityView.swift; sourceTree = "<group>"; };
 		89F426A285545FB23E4DD7C5 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		8D8CF6D85095524A2F1BAF82 /* CSVImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVImporter.swift; sourceTree = "<group>"; };
 		AAB149B6A95F2FB584D553F7 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		ACFCC5F16C1E2FE8F858FB54 /* RentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RentView.swift; sourceTree = "<group>"; };
+		B11C6403F888D65D008F1DA1 /* ImportTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportTransactionsView.swift; sourceTree = "<group>"; };
 		B292448CFDBEFCEDE6767CD0 /* AccountUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountUtils.swift; sourceTree = "<group>"; };
 		B78809CC50AD04E57D4E2F84 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		B88CA3DB0513F5F1F89EE909 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -76,6 +80,7 @@
 				89E0423649F783E759CB2FA4 /* AffordabilityView.swift */,
 				47571EAE7AD06C3E353E6431 /* DashboardView.swift */,
 				1DB1C2A390A07047ED6C1F8C /* ForgotPasswordView.swift */,
+				B11C6403F888D65D008F1DA1 /* ImportTransactionsView.swift */,
 				46350843AE63DC3B10D81685 /* IncomeView.swift */,
 				D494DD700DA776D2D0A0F3F8 /* LoginView.swift */,
 				183906486CE6FD9694720434 /* ProfileView.swift */,
@@ -132,6 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				B292448CFDBEFCEDE6767CD0 /* AccountUtils.swift */,
+				8D8CF6D85095524A2F1BAF82 /* CSVImporter.swift */,
 				1B505B925C698EDE95E89B14 /* FormatUtils.swift */,
 				D25368E3FD7B4990FEF0DFB1 /* IncomeUtils.swift */,
 				10CEA2C8AA6D571DB31ADCF9 /* SubscriptionUtils.swift */,
@@ -195,6 +201,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					1C6FE939C2BF2D04C646D12F = {
+						DevelopmentTeam = 2WLUPRYTW2;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -239,10 +246,12 @@
 				95CF2D9D7625C4139525990D /* AccountsView.swift in Sources */,
 				9EB589AB1CE36F33B7A5C8BB /* AffordabilityView.swift in Sources */,
 				BEC1536879FBC417A49574A3 /* AuthManager.swift in Sources */,
+				20BB8B381FF7A02225AE6364 /* CSVImporter.swift in Sources */,
 				F9AB10B9EC4F01482B731BCD /* ContentView.swift in Sources */,
 				D8834700B7C5FB897D65907C /* DashboardView.swift in Sources */,
 				83476AABD130BC0600F4AA3C /* ForgotPasswordView.swift in Sources */,
 				814EA4A8BABE50404517DA12 /* FormatUtils.swift in Sources */,
+				485737123FCAAE6EF16107CF /* ImportTransactionsView.swift in Sources */,
 				1FA5A7CCDC6FCD70B12EE4BC /* IncomeUtils.swift in Sources */,
 				59CF26678ABA7E582755B4AE /* IncomeView.swift in Sources */,
 				3F6A12B536F0F3F8343187CD /* KeychainHelper.swift in Sources */,
@@ -269,7 +278,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P76RH743GR;
+				DEVELOPMENT_TEAM = 2WLUPRYTW2;
 				INFOPLIST_FILE = SaveupSwiftUI/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -346,7 +355,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P76RH743GR;
+				DEVELOPMENT_TEAM = 2WLUPRYTW2;
 				INFOPLIST_FILE = SaveupSwiftUI/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
