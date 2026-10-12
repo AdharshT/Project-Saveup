@@ -20,12 +20,20 @@ struct SpendingView: View {
     @State private var showImportCSV = false
     @State private var editingTransaction: Transaction?
 
+    // Selection / bulk-delete state
+    @State private var isSelecting = false
+    @State private var selectedIDs: Set<Int> = []
+    @State private var showDeleteSelectedConfirm = false
+    @State private var showDeleteAllConfirm = false
+    @State private var isDeleting = false
+
     private var balanceTotal: Double {
         totalLiveBalance(accounts, transactions: transactions, subscriptions: subscriptions, incomes: incomes)
     }
     private var chartData: [(month: String, total: Double)] {
         (comparison?.months ?? []).map { ($0.month, $0.total) }
     }
+    private var allSelected: Bool { selectedIDs.count == transactions.count && !transactions.isEmpty }
 
     var body: some View {
         Group {
@@ -33,13 +41,34 @@ struct SpendingView: View {
                 ProgressView()
             } else {
                 List {
-                    // Balance summary
+                    // Balance summary + quick actions
                     Section {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Total Balance").font(.caption).foregroundStyle(.secondary)
                             Text(formatCurrency(balanceTotal)).font(.title.weight(.bold))
                         }
                         .padding(.vertical, 4)
+
+                        if !isSelecting {
+                            HStack(spacing: 12) {
+                                Button { showAddForm = true } label: {
+                                    Label("Log Spending", systemImage: "plus")
+                                        .font(.subheadline.weight(.medium))
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(Color(red: 0.18, green: 0.48, blue: 0.31))
+
+                                Button { showImportCSV = true } label: {
+                                    Label("Import CSV", systemImage: "tablecells")
+                                        .font(.subheadline.weight(.medium))
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(Color(red: 0.18, green: 0.48, blue: 0.31))
+                            }
+                            .padding(.vertical, 4)
+                        }
                     }
 
                     // Monthly trend chart
@@ -61,22 +90,134 @@ struct SpendingView: View {
                     // Transactions
                     Section {
                         ForEach(transactions) { txn in
-                            TransactionRow(txn: txn, accounts: accounts, onEdit: { editingTransaction = txn })
+                            if isSelecting {
+                                HStack(spacing: 12) {
+                                    Image(systemName: selectedIDs.contains(txn.id) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(selectedIDs.contains(txn.id) ? .red : .secondary)
+                                        .font(.title3)
+                                    TransactionRow(txn: txn, accounts: accounts, onEdit: {})
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture { toggleSelection(txn.id) }
+                            } else {
+                                TransactionRow(txn: txn, accounts: accounts, onEdit: { editingTransaction = txn })
+                            }
                         }
                         .onDelete { offsets in
+                            guard !isSelecting else { return }
                             Task { for i in offsets { try? await TransactionsAPI.remove(id: transactions[i].id) }; await load() }
                         }
-                        Button { showAddForm = true } label: { Label("Log Spending", systemImage: "plus") }
-                        Button { showImportCSV = true } label: { Label("Import from Bank PDF", systemImage: "doc.richtext") }
-                    } header: { Text("Recent Transactions") }
+
+                    } header: {
+                        if isSelecting {
+                            HStack {
+                                Text("\(transactions.count) transactions")
+                                Spacer()
+                                Button(allSelected ? "Deselect All" : "Select All") {
+                                    if allSelected { selectedIDs = [] }
+                                    else { selectedIDs = Set(transactions.map(\.id)) }
+                                }
+                                .font(.caption).buttonStyle(.borderless)
+                            }
+                        } else {
+                            Text("Recent Transactions")
+                        }
+                    }
                 }
                 .listStyle(.insetGrouped)
+                // Bottom delete bar shown while selecting
+                .safeAreaInset(edge: .bottom) {
+                    if isSelecting {
+                        deleteBar
+                    }
+                }
             }
         }
         .task { await load() }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if transactions.isEmpty {
+                    EmptyView()
+                } else if isSelecting {
+                    Button("Done") { isSelecting = false; selectedIDs = [] }
+                } else {
+                    Button("Select") { isSelecting = true }
+                }
+            }
+        }
         .sheet(isPresented: $showAddForm) { TransactionFormSheet(accounts: accounts, onSave: { await load() }) }
         .sheet(isPresented: $showImportCSV) { ImportTransactionsView(accounts: accounts, onImport: { await load() }) }
         .sheet(item: $editingTransaction) { txn in TransactionFormSheet(editing: txn, accounts: accounts, onSave: { await load() }) }
+        .alert("Delete \(selectedIDs.count) Transaction\(selectedIDs.count == 1 ? "" : "s")?",
+               isPresented: $showDeleteSelectedConfirm) {
+            Button("Delete", role: .destructive) { Task { await deleteSelected() } }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("This cannot be undone.") }
+        .alert("Delete All \(transactions.count) Transactions?",
+               isPresented: $showDeleteAllConfirm) {
+            Button("Delete All", role: .destructive) { Task { await deleteAll() } }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("This will permanently remove every spending log.") }
+    }
+
+    // MARK: - Delete bar
+
+    private var deleteBar: some View {
+        HStack(spacing: 16) {
+            Button(role: .destructive) {
+                showDeleteAllConfirm = true
+            } label: {
+                Label("Delete All", systemImage: "trash.fill")
+                    .font(.subheadline.weight(.medium))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
+            .disabled(transactions.isEmpty || isDeleting)
+
+            Button(role: .destructive) {
+                showDeleteSelectedConfirm = true
+            } label: {
+                if isDeleting {
+                    ProgressView()
+                } else {
+                    Label("Delete (\(selectedIDs.count))", systemImage: "trash")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .disabled(selectedIDs.isEmpty || isDeleting)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial)
+    }
+
+    // MARK: - Helpers
+
+    private func toggleSelection(_ id: Int) {
+        if selectedIDs.contains(id) { selectedIDs.remove(id) } else { selectedIDs.insert(id) }
+    }
+
+    private func deleteSelected() async {
+        isDeleting = true
+        let ids = selectedIDs
+        for id in ids { try? await TransactionsAPI.remove(id: id) }
+        selectedIDs = []
+        isSelecting = false
+        isDeleting = false
+        await load()
+    }
+
+    private func deleteAll() async {
+        isDeleting = true
+        for txn in transactions { try? await TransactionsAPI.remove(id: txn.id) }
+        selectedIDs = []
+        isSelecting = false
+        isDeleting = false
+        await load()
     }
 
     func load() async {
@@ -98,7 +239,11 @@ struct SpendingView: View {
 private struct TransactionRow: View {
     let txn: Transaction
     let accounts: [Account]
-    let onEdit: () -> Void
+    let onEdit: (() -> Void)?
+
+    init(txn: Transaction, accounts: [Account], onEdit: (() -> Void)? = nil) {
+        self.txn = txn; self.accounts = accounts; self.onEdit = onEdit
+    }
 
     var body: some View {
         HStack {
@@ -113,9 +258,11 @@ private struct TransactionRow: View {
             }
             Spacer()
             Text(formatCurrency(txn.amount)).font(.subheadline.weight(.medium))
-            Button("Edit", action: onEdit)
-                .font(.footnote).foregroundStyle(Color.accentColor)
-                .buttonStyle(.borderless)
+            if let onEdit {
+                Button("Edit", action: onEdit)
+                    .font(.footnote).foregroundStyle(Color.accentColor)
+                    .buttonStyle(.borderless)
+            }
         }
     }
 }
