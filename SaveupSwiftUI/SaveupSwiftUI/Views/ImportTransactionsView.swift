@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import PDFKit
 
 struct ImportTransactionsView: View {
     let accounts: [Account]
@@ -22,7 +23,7 @@ struct ImportTransactionsView: View {
                     previewList
                 }
             }
-            .navigationTitle("Import CSV")
+            .navigationTitle("Import PDF Statement")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -35,12 +36,9 @@ struct ImportTransactionsView: View {
                     }
                 }
             }
-            .fileImporter(
-                isPresented: $showFilePicker,
-                allowedContentTypes: [.commaSeparatedText, .plainText]
-            ) { result in
+            .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.pdf]) { result in
                 switch result {
-                case .success(let url): loadCSV(from: url)
+                case .success(let url): loadPDF(from: url)
                 case .failure: errorMessage = "Could not open the file."
                 }
             }
@@ -53,14 +51,14 @@ struct ImportTransactionsView: View {
     private var instructionsView: some View {
         ScrollView {
             VStack(spacing: 28) {
-                Image(systemName: "arrow.down.doc.fill")
+                Image(systemName: "doc.richtext.fill")
                     .font(.system(size: 64))
                     .foregroundStyle(Color(red: 0.22, green: 0.78, blue: 0.40))
 
                 VStack(spacing: 8) {
-                    Text("Import Bank Transactions")
+                    Text("Import Bank Statement PDF")
                         .font(.title2.weight(.semibold))
-                    Text("Download a CSV from your bank's website, then tap Choose File.")
+                    Text("Download your bank statement as a PDF, then tap Choose File. Transactions will be extracted automatically.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -82,12 +80,21 @@ struct ImportTransactionsView: View {
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(12)
 
+                VStack(spacing: 6) {
+                    Label("Best results with text-based PDFs", systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("Scanned image PDFs may not parse correctly.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
                 if let err = errorMessage {
-                    Text(err).foregroundStyle(.red).font(.footnote)
+                    Text(err).foregroundStyle(.red).font(.footnote).multilineTextAlignment(.center)
                 }
 
                 Button { showFilePicker = true } label: {
-                    Label("Choose CSV File", systemImage: "folder")
+                    Label("Choose PDF File", systemImage: "folder")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -113,7 +120,7 @@ struct ImportTransactionsView: View {
                 ForEach(parsedTransactions) { txn in
                     HStack(spacing: 12) {
                         Image(systemName: selectedRows.contains(txn.id) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selectedRows.contains(txn.id) ? Color(red: 0.22, green: 0.78, blue: 0.40) : Color.secondary)
+                            .foregroundStyle(selectedRows.contains(txn.id) ? Color(red: 0.22, green: 0.78, blue: 0.40) : .secondary)
                             .font(.title3)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(txn.description).font(.subheadline).lineLimit(1)
@@ -140,8 +147,7 @@ struct ImportTransactionsView: View {
                             selectedRows = Set(parsedTransactions.map(\.id))
                         }
                     }
-                    .font(.caption)
-                    .buttonStyle(.borderless)
+                    .font(.caption).buttonStyle(.borderless)
                 }
             }
 
@@ -158,24 +164,20 @@ struct ImportTransactionsView: View {
         if selectedRows.contains(id) { selectedRows.remove(id) } else { selectedRows.insert(id) }
     }
 
-    private func loadCSV(from url: URL) {
+    private func loadPDF(from url: URL) {
         errorMessage = nil
         guard url.startAccessingSecurityScopedResource() else {
             errorMessage = "Permission denied to read this file."
             return
         }
         defer { url.stopAccessingSecurityScopedResource() }
-        do {
-            let content = try String(contentsOf: url, encoding: .utf8)
-            let rows = CSVImporter.parse(content)
-            if rows.isEmpty {
-                errorMessage = "No transactions found. Make sure this is a bank CSV export."
-            } else {
-                parsedTransactions = rows
-                selectedRows = Set(rows.map(\.id))
-            }
-        } catch {
-            errorMessage = "Could not read the file."
+
+        let rows = PDFImporter.parse(url: url)
+        if rows.isEmpty {
+            errorMessage = "No transactions found. Make sure this is a text-based bank statement PDF (not a scanned image)."
+        } else {
+            parsedTransactions = rows
+            selectedRows = Set(rows.map(\.id))
         }
     }
 
@@ -204,9 +206,9 @@ struct ImportTransactionsView: View {
 }
 
 private let bankInstructions: [(bank: String, path: String)] = [
-    ("Chase", "Accounts → See activity → Download (top right)"),
-    ("Bank of America", "Account Details → Download → CSV"),
-    ("Wells Fargo", "Account Activity → Download Account Activity"),
-    ("Citi", "Account Details → Download Transactions → CSV"),
-    ("Capital One", "View Transactions → Download → CSV"),
+    ("Chase", "Accounts → See activity → Download → PDF"),
+    ("Bank of America", "Account Details → View Statements → Download PDF"),
+    ("Wells Fargo", "Statements & Documents → View Statement"),
+    ("Citi", "Account → Statements → Download PDF"),
+    ("Capital One", "Account → View Statements → Download"),
 ]

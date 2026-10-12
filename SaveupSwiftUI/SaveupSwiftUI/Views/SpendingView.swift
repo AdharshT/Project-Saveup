@@ -67,7 +67,7 @@ struct SpendingView: View {
                             Task { for i in offsets { try? await TransactionsAPI.remove(id: transactions[i].id) }; await load() }
                         }
                         Button { showAddForm = true } label: { Label("Log Spending", systemImage: "plus") }
-                        Button { showImportCSV = true } label: { Label("Import from Bank CSV", systemImage: "arrow.down.doc") }
+                        Button { showImportCSV = true } label: { Label("Import from Bank PDF", systemImage: "doc.richtext") }
                     } header: { Text("Recent Transactions") }
                 }
                 .listStyle(.insetGrouped)

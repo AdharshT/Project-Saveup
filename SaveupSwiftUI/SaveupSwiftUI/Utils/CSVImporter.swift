@@ -1,4 +1,5 @@
 import Foundation
+import PDFKit
 
 struct ParsedTransaction: Identifiable {
     let id = UUID()
@@ -8,84 +9,60 @@ struct ParsedTransaction: Identifiable {
     let category: String?
 }
 
-enum CSVImporter {
+enum PDFImporter {
 
-    static func parse(_ content: String) -> [ParsedTransaction] {
-        let lines = content.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        guard lines.count >= 2 else { return [] }
-
-        let rawHeader = parseRow(lines[0])
-        let header = rawHeader.map { $0.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "\" ")) }
-        let dataLines = Array(lines.dropFirst())
-
-        if let r = parseSingleAmountFormat(header: header, lines: dataLines) { return r }
-        if let r = parseSplitDebitCreditFormat(header: header, lines: dataLines) { return r }
-        return []
+    static func parse(url: URL) -> [ParsedTransaction] {
+        guard let doc = PDFDocument(url: url) else { return [] }
+        let text = (0..<doc.pageCount)
+            .compactMap { doc.page(at: $0)?.string }
+            .joined(separator: "\n")
+        return extractTransactions(from: text)
     }
 
-    // Chase, BofA, Wells Fargo — single "amount" column, negative = spending
-    private static func parseSingleAmountFormat(header: [String], lines: [String]) -> [ParsedTransaction]? {
-        guard let dateCol = header.firstIndex(where: { $0.contains("date") }),
-              let descCol = header.firstIndex(where: { $0 == "description" || $0 == "payee" || $0 == "memo" || $0 == "name" }),
-              let amtCol  = header.firstIndex(where: { $0 == "amount" }) else { return nil }
+    // MARK: - Text extraction
+
+    private static func extractTransactions(from text: String) -> [ParsedTransaction] {
+        let lines = text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { $0.count > 5 }
+
+        // Matches: "01/15/2024 Amazon.com -45.67" or "01/15 Amazon.com 45.67"
+        // Trailing group allows optional running balance after the amount
+        let pattern = try! NSRegularExpression(
+            pattern: #"^(\d{1,2}[/\-]\d{1,2}(?:[/\-]\d{2,4})?)\s{1,5}(.{2,60}?)\s{1,10}(-?\$?[\d,]+\.\d{2})(?:\s+.*)?$"#
+        )
+
+        let skipWords = ["balance", "total", "minimum", "payment due", "credit limit", "new balance", "previous balance"]
 
         return lines.compactMap { line -> ParsedTransaction? in
-            let cols = parseRow(line)
-            guard cols.count > max(dateCol, descCol, amtCol) else { return nil }
-            let dateStr = clean(cols[dateCol])
-            let desc    = clean(cols[descCol])
-            let amtStr  = clean(cols[amtCol])
+            let ns = line as NSString
+            guard let match = pattern.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)),
+                  let dateR = Range(match.range(at: 1), in: line),
+                  let descR = Range(match.range(at: 2), in: line),
+                  let amtR  = Range(match.range(at: 3), in: line) else { return nil }
+
+            let dateStr = String(line[dateR])
+            let desc    = String(line[descR]).trimmingCharacters(in: .whitespaces)
+            let amtStr  = String(line[amtR])
+                .replacingOccurrences(of: "$", with: "")
+                .replacingOccurrences(of: ",", with: "")
+
             guard let date   = parseDate(dateStr),
-                  let amount = parseAmount(amtStr), amount != 0 else { return nil }
+                  let amount = Double(amtStr),
+                  amount != 0,
+                  desc.count >= 2 else { return nil }
+
+            let descLower = desc.lowercased()
+            if skipWords.contains(where: { descLower.contains($0) }) { return nil }
+
             return ParsedTransaction(date: date, description: desc, amount: abs(amount), category: guessCategory(desc))
         }
     }
 
-    // Citi, Capital One — separate "debit" and "credit" columns
-    private static func parseSplitDebitCreditFormat(header: [String], lines: [String]) -> [ParsedTransaction]? {
-        guard let dateCol  = header.firstIndex(where: { $0.contains("date") }),
-              let descCol  = header.firstIndex(where: { $0.contains("description") }),
-              let debitCol = header.firstIndex(where: { $0 == "debit" }) else { return nil }
-
-        return lines.compactMap { line -> ParsedTransaction? in
-            let cols = parseRow(line)
-            guard cols.count > max(dateCol, descCol, debitCol) else { return nil }
-            let dateStr  = clean(cols[dateCol])
-            let desc     = clean(cols[descCol])
-            let debitStr = clean(cols[debitCol])
-            guard let date   = parseDate(dateStr),
-                  let amount = parseAmount(debitStr), amount > 0 else { return nil }
-            return ParsedTransaction(date: date, description: desc, amount: amount, category: guessCategory(desc))
-        }
-    }
-
-    // MARK: - Row parser (handles quoted fields with commas inside)
-
-    static func parseRow(_ line: String) -> [String] {
-        var fields: [String] = []
-        var current = ""
-        var inQuotes = false
-        for ch in line {
-            if ch == "\"" { inQuotes.toggle() }
-            else if ch == "," && !inQuotes { fields.append(current); current = "" }
-            else { current.append(ch) }
-        }
-        fields.append(current)
-        return fields
-    }
-
-    private static func clean(_ s: String) -> String {
-        s.trimmingCharacters(in: CharacterSet(charactersIn: "\" ").union(.whitespaces))
-    }
-
-    private static func parseAmount(_ s: String) -> Double? {
-        Double(s.replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "$", with: ""))
-    }
+    // MARK: - Helpers
 
     private static func parseDate(_ s: String) -> Date? {
-        for fmt in ["MM/dd/yyyy", "M/d/yyyy", "yyyy-MM-dd", "MM-dd-yyyy", "dd/MM/yyyy", "MMM dd, yyyy", "MM/dd/yy"] {
+        for fmt in ["MM/dd/yyyy", "M/d/yyyy", "MM/dd/yy", "M/d/yy", "yyyy-MM-dd", "MM-dd-yyyy"] {
             let f = DateFormatter()
             f.dateFormat = fmt
             f.locale = Locale(identifier: "en_US_POSIX")
@@ -94,7 +71,7 @@ enum CSVImporter {
         return nil
     }
 
-    private static func guessCategory(_ desc: String) -> String {
+    static func guessCategory(_ desc: String) -> String {
         let d = desc.lowercased()
         if d.contains("restaurant") || d.contains("mcdonald") || d.contains("starbucks") ||
            d.contains("pizza") || d.contains("cafe") || d.contains("doordash") ||
@@ -109,7 +86,7 @@ enum CSVImporter {
            d.contains("cvs") || d.contains("walgreen") || d.contains("pharmacy") { return "Fitness" }
         if d.contains("hotel") || d.contains("airbnb") || d.contains("airline") ||
            d.contains("flight") || d.contains("expedia") || d.contains("delta") { return "Travel" }
-        if d.contains("electric") || d.contains("water") || d.contains("internet") ||
+        if d.contains("electric") || d.contains("water bill") || d.contains("internet") ||
            d.contains("at&t") || d.contains("verizon") || d.contains("comcast") { return "Household" }
         return "Miscellaneous"
     }
