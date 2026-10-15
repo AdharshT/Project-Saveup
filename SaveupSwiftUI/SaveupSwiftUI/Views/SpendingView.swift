@@ -27,13 +27,39 @@ struct SpendingView: View {
     @State private var showDeleteAllConfirm = false
     @State private var isDeleting = false
 
+    // Month filter
+    @State private var selectedMonthKey: String? = nil   // "yyyy-MM", nil = all
+
     private var balanceTotal: Double {
         totalLiveBalance(accounts, transactions: transactions, subscriptions: subscriptions, incomes: incomes)
     }
     private var chartData: [(month: String, total: Double)] {
         (comparison?.months ?? []).map { ($0.month, $0.total) }
     }
-    private var allSelected: Bool { selectedIDs.count == transactions.count && !transactions.isEmpty }
+
+    private var availableMonths: [(key: String, label: String)] {
+        let keys = Set(transactions.compactMap { txn -> String? in
+            guard txn.date.count >= 7 else { return nil }
+            return String(txn.date.prefix(7))
+        })
+        let keyFmt = DateFormatter(); keyFmt.dateFormat = "yyyy-MM"; keyFmt.locale = Locale(identifier: "en_US_POSIX")
+        let lblFmt = DateFormatter(); lblFmt.dateFormat = "MMM yyyy"; lblFmt.locale = Locale(identifier: "en_US_POSIX")
+        return keys.sorted(by: >).compactMap { key in
+            guard let date = keyFmt.date(from: key) else { return nil }
+            return (key, lblFmt.string(from: date))
+        }
+    }
+
+    private var filteredTransactions: [Transaction] {
+        guard let key = selectedMonthKey else { return transactions }
+        return transactions.filter { $0.date.hasPrefix(key) }
+    }
+
+    private var selectedMonthTotal: Double {
+        filteredTransactions.reduce(0) { $0 + $1.amount }
+    }
+
+    private var allSelected: Bool { selectedIDs.count == filteredTransactions.count && !filteredTransactions.isEmpty }
 
     var body: some View {
         Group {
@@ -71,6 +97,28 @@ struct SpendingView: View {
                         }
                     }
 
+                    // Month picker
+                    if !availableMonths.isEmpty {
+                        Section {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    MonthPill(label: "All", isSelected: selectedMonthKey == nil) {
+                                        selectedMonthKey = nil
+                                    }
+                                    ForEach(availableMonths, id: \.key) { month in
+                                        MonthPill(label: month.label, isSelected: selectedMonthKey == month.key) {
+                                            selectedMonthKey = month.key
+                                            isSelecting = false
+                                            selectedIDs = []
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 4)
+                            }
+                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                        }
+                    }
+
                     // Monthly trend chart
                     Section("Monthly Trend") {
                         if chartData.isEmpty {
@@ -89,7 +137,7 @@ struct SpendingView: View {
 
                     // Transactions
                     Section {
-                        ForEach(transactions) { txn in
+                        ForEach(filteredTransactions) { txn in
                             if isSelecting {
                                 HStack(spacing: 12) {
                                     Image(systemName: selectedIDs.contains(txn.id) ? "checkmark.circle.fill" : "circle")
@@ -105,19 +153,28 @@ struct SpendingView: View {
                         }
                         .onDelete { offsets in
                             guard !isSelecting else { return }
-                            Task { for i in offsets { try? await TransactionsAPI.remove(id: transactions[i].id) }; await load() }
+                            Task { for i in offsets { try? await TransactionsAPI.remove(id: filteredTransactions[i].id) }; await load() }
                         }
 
                     } header: {
                         if isSelecting {
                             HStack {
-                                Text("\(transactions.count) transactions")
+                                Text("\(filteredTransactions.count) transactions")
                                 Spacer()
                                 Button(allSelected ? "Deselect All" : "Select All") {
                                     if allSelected { selectedIDs = [] }
-                                    else { selectedIDs = Set(transactions.map(\.id)) }
+                                    else { selectedIDs = Set(filteredTransactions.map(\.id)) }
                                 }
                                 .font(.caption).buttonStyle(.borderless)
+                            }
+                        } else if let key = selectedMonthKey,
+                                  let month = availableMonths.first(where: { $0.key == key }) {
+                            HStack {
+                                Text(month.label)
+                                Spacer()
+                                Text(formatCurrency(selectedMonthTotal))
+                                    .foregroundStyle(Color(red: 0.18, green: 0.48, blue: 0.31))
+                                    .fontWeight(.semibold)
                             }
                         } else {
                             Text("Recent Transactions")
@@ -345,5 +402,26 @@ struct TransactionFormSheet: View {
             await onSave(); dismiss()
         } catch { self.error = error.localizedDescription }
         isSaving = false
+    }
+}
+
+// MARK: - Month Pill
+
+private struct MonthPill: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(isSelected ? Color(red: 0.18, green: 0.48, blue: 0.31) : Color(.secondarySystemBackground))
+                .foregroundStyle(isSelected ? .white : .primary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }

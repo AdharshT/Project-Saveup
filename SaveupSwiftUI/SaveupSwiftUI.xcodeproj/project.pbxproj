@@ -20,6 +20,8 @@
 		59CF26678ABA7E582755B4AE /* IncomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46350843AE63DC3B10D81685 /* IncomeView.swift */; };
 		814EA4A8BABE50404517DA12 /* FormatUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B505B925C698EDE95E89B14 /* FormatUtils.swift */; };
 		83476AABD130BC0600F4AA3C /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB1C2A390A07047ED6C1F8C /* ForgotPasswordView.swift */; };
+		8812C84630817072006A7926 /* ClaudeReportAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8812C84530817071006A7926 /* ClaudeReportAPI.swift */; };
+		8812C84830817085006A7926 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8812C84730817085006A7926 /* ReportsView.swift */; };
 		95CF2D9D7625C4139525990D /* AccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7247EEBC97BFEEE2CA0B937 /* AccountsView.swift */; };
 		9EB589AB1CE36F33B7A5C8BB /* AffordabilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89E0423649F783E759CB2FA4 /* AffordabilityView.swift */; };
 		BEC1536879FBC417A49574A3 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FB9E6855FE9A0B871A5E33C /* AuthManager.swift */; };
@@ -46,7 +48,9 @@
 		46350843AE63DC3B10D81685 /* IncomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomeView.swift; sourceTree = "<group>"; };
 		47571EAE7AD06C3E353E6431 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		4FB9E6855FE9A0B871A5E33C /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
-		61CBD928D0C89F50066EEA1A /* SaveupSwiftUI.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SaveupSwiftUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		61CBD928D0C89F50066EEA1A /* SaveupSwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SaveupSwiftUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8812C84530817071006A7926 /* ClaudeReportAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeReportAPI.swift; sourceTree = "<group>"; };
+		8812C84730817085006A7926 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
 		8970BB36EA21904582CD608E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		89E0423649F783E759CB2FA4 /* AffordabilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffordabilityView.swift; sourceTree = "<group>"; };
 		89F426A285545FB23E4DD7C5 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
@@ -89,6 +93,7 @@
 				2C18518EF98988D0E60C0D8F /* SpendingView.swift */,
 				89F426A285545FB23E4DD7C5 /* SplashView.swift */,
 				FE1B0CF768C9FC5D1B47824A /* SubscriptionsView.swift */,
+				8812C84730817085006A7926 /* ReportsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -149,6 +154,7 @@
 			isa = PBXGroup;
 			children = (
 				AAB149B6A95F2FB584D553F7 /* APIClient.swift */,
+				8812C84530817071006A7926 /* ClaudeReportAPI.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -201,7 +207,6 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					1C6FE939C2BF2D04C646D12F = {
-						DevelopmentTeam = 2WLUPRYTW2;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -261,7 +266,9 @@
 				5440B7DDDA813A3A2A3C335B /* RentView.swift in Sources */,
 				C6DFE2126BD70673B288A88D /* SaveupApp.swift in Sources */,
 				F12E18E6B1FB51B04D237D74 /* SignUpView.swift in Sources */,
+				8812C84830817085006A7926 /* ReportsView.swift in Sources */,
 				1447D817AB3F22EDB6F63F05 /* SpendingView.swift in Sources */,
+				8812C84630817072006A7926 /* ClaudeReportAPI.swift in Sources */,
 				E8E94E99E5D50C0DF99694E7 /* SplashView.swift in Sources */,
 				4845605E82E8949BDD9C4146 /* SubscriptionUtils.swift in Sources */,
 				E248DA1D405852509CF6C75B /* SubscriptionsView.swift in Sources */,
@@ -278,7 +285,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2WLUPRYTW2;
+				DEVELOPMENT_TEAM = P76RH743GR;
 				INFOPLIST_FILE = SaveupSwiftUI/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -355,7 +362,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2WLUPRYTW2;
+				DEVELOPMENT_TEAM = P76RH743GR;
 				INFOPLIST_FILE = SaveupSwiftUI/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

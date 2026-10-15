@@ -35,6 +35,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     case subscriptions = "Subscriptions"
     case rent          = "Rent & Utilities"
     case affordability = "Can I Afford This?"
+    case reports       = "AI Report"
     case profile       = "Profile"
 
     var id: String { rawValue }
@@ -48,6 +49,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .income:        "dollarsign.circle.fill"
         case .spending:      "cart.fill"
         case .affordability: "questionmark.circle.fill"
+        case .reports:       "sparkles"
         case .profile:       "person.fill"
         }
     }
@@ -62,6 +64,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .income:        IncomeView()
         case .spending:      SpendingView()
         case .affordability: AffordabilityView()
+        case .reports:       ReportsView()
         case .profile:       ProfileView()
         }
     }
