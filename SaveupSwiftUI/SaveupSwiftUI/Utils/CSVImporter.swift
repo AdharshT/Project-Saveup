@@ -45,10 +45,18 @@ enum CSVImporter {
                 amount = abs(v)
             } else if let di = debitIdx, let ci = creditIdx,
                       di < cols.count, ci < cols.count {
-                let debit  = parseAmount(cols[di])  ?? 0
+                // Only import debit/withdrawal rows — credit rows are deposits (paychecks, etc.)
+                let debit  = parseAmount(cols[di]) ?? 0
                 let credit = parseAmount(cols[ci]) ?? 0
-                amount = abs(debit) + abs(credit)
-                if amount == 0 { continue }
+                if debit > 0 {
+                    amount = debit
+                } else if credit > 0 {
+                    // Treat credit-only rows as income so the import view can skip them
+                    results.append(ParsedTransaction(date: date, description: desc, amount: credit, category: "Income"))
+                    continue
+                } else {
+                    continue
+                }
             } else {
                 continue
             }
@@ -111,6 +119,10 @@ enum CSVImporter {
 
     static func guessCategory(_ desc: String) -> String {
         let d = desc.lowercased()
+        // Paycheck / direct deposit — must come first so it's never mis-categorised as spending
+        if d.contains("direct dep") || d.contains("directdep") || d.contains("payroll") ||
+           d.contains("paycheck") || d.contains("salary") || d.contains("wages") ||
+           d.contains("ach credit") || d.contains("dda credit") || d.contains("deposit") { return "Income" }
         if d.contains("restaurant") || d.contains("mcdonald") || d.contains("starbucks") ||
            d.contains("pizza") || d.contains("cafe") || d.contains("doordash") ||
            d.contains("grubhub") || d.contains("chipotle") || d.contains("subway") ||

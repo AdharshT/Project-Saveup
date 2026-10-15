@@ -10,13 +10,15 @@ struct ImportTransactionsView: View {
     @State private var parsedTransactions: [ParsedTransaction] = []
     @State private var selectedRows: Set<UUID> = []
     @State private var duplicateIDs: Set<UUID> = []
+    @State private var incomeIDs: Set<UUID> = []
     @State private var existingTransactions: [Transaction] = []
     @State private var showFilePicker = false
     @State private var isImporting = false
     @State private var errorMessage: String?
 
-    private var newCount: Int { parsedTransactions.filter { !duplicateIDs.contains($0.id) }.count }
+    private var newCount: Int { parsedTransactions.filter { !duplicateIDs.contains($0.id) && !incomeIDs.contains($0.id) }.count }
     private var dupCount: Int  { duplicateIDs.count }
+    private var incomeCount: Int { incomeIDs.count }
 
     var body: some View {
         NavigationStack {
@@ -123,6 +125,18 @@ struct ImportTransactionsView: View {
                 .pickerStyle(.menu)
             }
 
+            // Income / paycheck banner
+            if incomeCount > 0 {
+                Section {
+                    Label(
+                        "\(incomeCount) paycheck\(incomeCount == 1 ? "" : "s") / deposit\(incomeCount == 1 ? "" : "s") skipped — not spending",
+                        systemImage: "banknote"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.green)
+                }
+            }
+
             // Duplicate summary banner
             if dupCount > 0 {
                 Section {
@@ -138,6 +152,8 @@ struct ImportTransactionsView: View {
             Section {
                 ForEach(parsedTransactions) { txn in
                     let isDup = duplicateIDs.contains(txn.id)
+                    let isIncome = incomeIDs.contains(txn.id)
+                    let isSkipped = isDup || isIncome
                     HStack(spacing: 12) {
                         Image(systemName: selectedRows.contains(txn.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(
@@ -151,13 +167,16 @@ struct ImportTransactionsView: View {
                             Text(txn.description)
                                 .font(.subheadline)
                                 .lineLimit(1)
-                                .foregroundStyle(isDup ? .secondary : .primary)
+                                .foregroundStyle(isSkipped ? .secondary : .primary)
                             HStack(spacing: 4) {
                                 Text(txn.date.formatted(date: .abbreviated, time: .omitted))
-                                if let cat = txn.category { Text("· \(cat)") }
+                                if let cat = txn.category, !isIncome { Text("· \(cat)") }
                                 if isDup {
                                     Text("· Already logged")
                                         .foregroundStyle(.orange)
+                                } else if isIncome {
+                                    Text("· Paycheck / deposit")
+                                        .foregroundStyle(.green)
                                 }
                             }
                             .font(.caption).foregroundStyle(.secondary)
@@ -166,15 +185,15 @@ struct ImportTransactionsView: View {
                         Spacer()
                         Text(formatCurrency(txn.amount))
                             .font(.subheadline.weight(.medium))
-                            .foregroundStyle(isDup ? .secondary : .primary)
+                            .foregroundStyle(isSkipped ? .secondary : .primary)
                     }
                     .contentShape(Rectangle())
                     .onTapGesture { toggle(txn.id) }
                 }
             } header: {
                 HStack {
-                    if dupCount > 0 {
-                        Text("\(newCount) new · \(dupCount) duplicate\(dupCount == 1 ? "" : "s")")
+                    if dupCount > 0 || incomeCount > 0 {
+                        Text("\(newCount) new · \(dupCount + incomeCount) skipped")
                     } else {
                         Text("\(parsedTransactions.count) transactions found")
                     }
@@ -234,10 +253,12 @@ struct ImportTransactionsView: View {
         existingTransactions = fresh
 
         let dups = Set(rows.filter { isDuplicate($0) }.map(\.id))
+        let income = Set(rows.filter { $0.category == "Income" }.map(\.id))
         parsedTransactions = rows
         duplicateIDs = dups
-        // Pre-select only non-duplicates
-        selectedRows = Set(rows.filter { !dups.contains($0.id) }.map(\.id))
+        incomeIDs = income
+        // Pre-select only non-duplicates and non-income rows
+        selectedRows = Set(rows.filter { !dups.contains($0.id) && !income.contains($0.id) }.map(\.id))
     }
 
     private func importSelected() async {
