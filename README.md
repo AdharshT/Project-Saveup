@@ -14,6 +14,8 @@ A Rocket Money-style app for tracking subscriptions, paycheck income, monthly sp
 - **Income** — add one or more income sources with a pay frequency, see the next upcoming paycheck(s).
 - **Spending** — log transactions by category and date, view month-over-month totals and a trend chart.
 - **Can I Afford This?** — check whether a purchase fits your discretionary budget (income minus subscriptions minus spending so far this month).
+- **Rent & Utilities — Track rent, utilities, and recurring bills to understand your monthly expenses.
+- **AI Financial Reports — Use Claude AI to analyze income, spending, and savings and generate personalized financial insights.
 
 ## Getting Started
 
