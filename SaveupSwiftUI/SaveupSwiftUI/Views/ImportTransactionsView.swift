@@ -10,15 +10,18 @@ struct ImportTransactionsView: View {
     @State private var parsedTransactions: [ParsedTransaction] = []
     @State private var selectedRows: Set<UUID> = []
     @State private var duplicateIDs: Set<UUID> = []
+    @State private var possibleDuplicateIDs: Set<UUID> = []
     @State private var incomeIDs: Set<UUID> = []
     @State private var existingTransactions: [Transaction] = []
     @State private var showFilePicker = false
+    @State private var showPlaidLink = false
     @State private var isImporting = false
     @State private var errorMessage: String?
 
-    private var newCount: Int { parsedTransactions.filter { !duplicateIDs.contains($0.id) && !incomeIDs.contains($0.id) }.count }
+    private var newCount: Int { parsedTransactions.filter { !duplicateIDs.contains($0.id) && !incomeIDs.contains($0.id) && !possibleDuplicateIDs.contains($0.id) }.count }
     private var dupCount: Int  { duplicateIDs.count }
     private var incomeCount: Int { incomeIDs.count }
+    private var possibleDupCount: Int { possibleDuplicateIDs.count }
 
     var body: some View {
         NavigationStack {
@@ -41,6 +44,9 @@ struct ImportTransactionsView: View {
                         .disabled(selectedRows.isEmpty || isImporting)
                     }
                 }
+            }
+            .sheet(isPresented: $showPlaidLink) {
+                ConnectBankView(onSync: { await onImport() })
             }
             .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.commaSeparatedText]) { result in
                 switch result {
@@ -102,11 +108,19 @@ struct ImportTransactionsView: View {
                     Text(err).foregroundStyle(.red).font(.footnote).multilineTextAlignment(.center)
                 }
 
-                Button { showFilePicker = true } label: {
-                    Label("Choose CSV File", systemImage: "folder")
+                Button { showPlaidLink = true } label: {
+                    Label("Connect Bank with Plaid", systemImage: "building.columns")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(Color(red: 0.18, green: 0.48, blue: 0.31))
+
+                Button { showFilePicker = true } label: {
+                    Label("Import CSV Instead", systemImage: "folder")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
                 .controlSize(.large)
                 .tint(Color(red: 0.22, green: 0.78, blue: 0.40))
             }
@@ -149,11 +163,24 @@ struct ImportTransactionsView: View {
                 }
             }
 
+            // Possible duplicate banner
+            if possibleDupCount > 0 {
+                Section {
+                    Label(
+                        "\(possibleDupCount) possible duplicate\(possibleDupCount == 1 ? "" : "s") — same amount within 3 days of a logged transaction",
+                        systemImage: "questionmark.circle"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(Color(red: 0.85, green: 0.65, blue: 0.0))
+                }
+            }
+
             Section {
                 ForEach(parsedTransactions) { txn in
                     let isDup = duplicateIDs.contains(txn.id)
                     let isIncome = incomeIDs.contains(txn.id)
-                    let isSkipped = isDup || isIncome
+                    let isPossible = possibleDuplicateIDs.contains(txn.id)
+                    let isSkipped = isDup || isIncome || isPossible
                     HStack(spacing: 12) {
                         Image(systemName: selectedRows.contains(txn.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(
@@ -177,6 +204,9 @@ struct ImportTransactionsView: View {
                                 } else if isIncome {
                                     Text("· Paycheck / deposit")
                                         .foregroundStyle(.green)
+                                } else if isPossible {
+                                    Text("· Possible duplicate")
+                                        .foregroundStyle(Color(red: 0.85, green: 0.65, blue: 0.0))
                                 }
                             }
                             .font(.caption).foregroundStyle(.secondary)
@@ -192,8 +222,8 @@ struct ImportTransactionsView: View {
                 }
             } header: {
                 HStack {
-                    if dupCount > 0 || incomeCount > 0 {
-                        Text("\(newCount) new · \(dupCount + incomeCount) skipped")
+                    if dupCount > 0 || incomeCount > 0 || possibleDupCount > 0 {
+                        Text("\(newCount) new · \(dupCount + incomeCount + possibleDupCount) skipped")
                     } else {
                         Text("\(parsedTransactions.count) transactions found")
                     }
@@ -254,11 +284,22 @@ struct ImportTransactionsView: View {
 
         let dups = Set(rows.filter { isDuplicate($0) }.map(\.id))
         let income = Set(rows.filter { $0.category == "Income" }.map(\.id))
+        // Possible duplicates: same amount within ±3 days (covers authorization vs. settlement date gap)
+        let possible = Set(rows.filter { parsed in
+            guard !dups.contains(parsed.id), !income.contains(parsed.id) else { return false }
+            return fresh.contains { existing in
+                guard abs(existing.amount - parsed.amount) < 0.01,
+                      let existingDate = parseISODate(existing.date) else { return false }
+                let diff = abs(Calendar.current.dateComponents([.day], from: parsed.date, to: existingDate).day ?? Int.max)
+                return diff <= 3
+            }
+        }.map(\.id))
         parsedTransactions = rows
         duplicateIDs = dups
         incomeIDs = income
-        // Pre-select only non-duplicates and non-income rows
-        selectedRows = Set(rows.filter { !dups.contains($0.id) && !income.contains($0.id) }.map(\.id))
+        possibleDuplicateIDs = possible
+        // Pre-select only confirmed-new rows
+        selectedRows = Set(rows.filter { !dups.contains($0.id) && !income.contains($0.id) && !possible.contains($0.id) }.map(\.id))
     }
 
     private func importSelected() async {

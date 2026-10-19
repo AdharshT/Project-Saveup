@@ -216,6 +216,24 @@ enum SummaryAPI {
     }
 }
 
+// MARK: - Plaid
+
+enum PlaidAPI {
+    struct LinkTokenResponse: Decodable { let linkToken: String }
+    struct ExchangeBody: Encodable { let publicToken: String }
+    struct SyncResponse: Decodable { let imported: Int }
+
+    static func linkToken() async throws -> LinkTokenResponse {
+        try await request(path: "/plaid/link-token")
+    }
+    static func exchange(publicToken: String) async throws {
+        try await requestVoid(path: "/plaid/exchange", method: "POST", body: ExchangeBody(publicToken: publicToken))
+    }
+    static func sync() async throws -> SyncResponse {
+        try await request(path: "/plaid/sync", method: "POST")
+    }
+}
+
 // MARK: - Affordability
 
 enum AffordabilityAPI {

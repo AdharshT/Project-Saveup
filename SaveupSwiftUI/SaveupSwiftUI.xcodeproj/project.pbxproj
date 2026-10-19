@@ -22,6 +22,9 @@
 		83476AABD130BC0600F4AA3C /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB1C2A390A07047ED6C1F8C /* ForgotPasswordView.swift */; };
 		8812C84630817072006A7926 /* ClaudeReportAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8812C84530817071006A7926 /* ClaudeReportAPI.swift */; };
 		8812C84830817085006A7926 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8812C84730817085006A7926 /* ReportsView.swift */; };
+		8812C84A30859476006A7926 /* PlaidLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8812C84930859476006A7926 /* PlaidLinkView.swift */; };
+		8812C8563085B7DC006A7926 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8812C8553085B7DC006A7926 /* LinkKit */; };
+		8812C8583085B7DC006A7926 /* LinkKitObjC in Frameworks */ = {isa = PBXBuildFile; productRef = 8812C8573085B7DC006A7926 /* LinkKitObjC */; };
 		95CF2D9D7625C4139525990D /* AccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7247EEBC97BFEEE2CA0B937 /* AccountsView.swift */; };
 		9EB589AB1CE36F33B7A5C8BB /* AffordabilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89E0423649F783E759CB2FA4 /* AffordabilityView.swift */; };
 		BEC1536879FBC417A49574A3 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FB9E6855FE9A0B871A5E33C /* AuthManager.swift */; };
@@ -51,6 +54,8 @@
 		61CBD928D0C89F50066EEA1A /* SaveupSwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SaveupSwiftUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8812C84530817071006A7926 /* ClaudeReportAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeReportAPI.swift; sourceTree = "<group>"; };
 		8812C84730817085006A7926 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
+		8812C84930859476006A7926 /* PlaidLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidLinkView.swift; sourceTree = "<group>"; };
+		8812C84F3085B2E6006A7926 /* plaid-link-ios */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "plaid-link-ios"; path = "/Users/adharsh/Library/Developer/Xcode/DerivedData/SaveupSwiftUI-axduvadefqqfwjdlpejphstgjhot/SourcePackages/checkouts/plaid-link-ios"; sourceTree = "<absolute>"; };
 		8970BB36EA21904582CD608E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		89E0423649F783E759CB2FA4 /* AffordabilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffordabilityView.swift; sourceTree = "<group>"; };
 		89F426A285545FB23E4DD7C5 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
@@ -67,6 +72,18 @@
 		D75B51E19744577298B85914 /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		FE1B0CF768C9FC5D1B47824A /* SubscriptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8812C84E3085B1B6006A7926 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8812C8563085B7DC006A7926 /* LinkKit in Frameworks */,
+				8812C8583085B7DC006A7926 /* LinkKitObjC in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		27667C1DA71E5180D81682B0 /* Resources */ = {
@@ -94,6 +111,7 @@
 				89F426A285545FB23E4DD7C5 /* SplashView.swift */,
 				FE1B0CF768C9FC5D1B47824A /* SubscriptionsView.swift */,
 				8812C84730817085006A7926 /* ReportsView.swift */,
+				8812C84930859476006A7926 /* PlaidLinkView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -120,6 +138,14 @@
 				62A20F6CCECCD9A5EB5AFE7E /* Views */,
 			);
 			path = SaveupSwiftUI;
+			sourceTree = "<group>";
+		};
+		8812C84D3085B12F006A7926 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8812C84F3085B2E6006A7926 /* plaid-link-ios */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		8F6F9F5D845C9864970D1051 /* Products */ = {
@@ -163,6 +189,7 @@
 			isa = PBXGroup;
 			children = (
 				85DBA5A02B6D0A373FB60CA5 /* SaveupSwiftUI */,
+				8812C84D3085B12F006A7926 /* Frameworks */,
 				8F6F9F5D845C9864970D1051 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -185,6 +212,7 @@
 			buildPhases = (
 				D57E5DC78A1934F78D78058D /* Sources */,
 				3F2E95A7394DDEC51ED07AA3 /* Resources */,
+				8812C84E3085B1B6006A7926 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -192,6 +220,8 @@
 			);
 			name = SaveupSwiftUI;
 			packageProductDependencies = (
+				8812C8553085B7DC006A7926 /* LinkKit */,
+				8812C8573085B7DC006A7926 /* LinkKitObjC */,
 			);
 			productName = SaveupSwiftUI;
 			productReference = 61CBD928D0C89F50066EEA1A /* SaveupSwiftUI.app */;
@@ -220,6 +250,9 @@
 			);
 			mainGroup = B708208B527810A07651B5D1;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8812C8543085B7DC006A7926 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8F6F9F5D845C9864970D1051 /* Products */;
 			projectDirPath = "";
@@ -271,6 +304,7 @@
 				8812C84630817072006A7926 /* ClaudeReportAPI.swift in Sources */,
 				E8E94E99E5D50C0DF99694E7 /* SplashView.swift in Sources */,
 				4845605E82E8949BDD9C4146 /* SubscriptionUtils.swift in Sources */,
+				8812C84A30859476006A7926 /* PlaidLinkView.swift in Sources */,
 				E248DA1D405852509CF6C75B /* SubscriptionsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -461,6 +495,30 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8812C8543085B7DC006A7926 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/plaid/plaid-link-ios-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.2.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8812C8553085B7DC006A7926 /* LinkKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8812C8543085B7DC006A7926 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */;
+			productName = LinkKit;
+		};
+		8812C8573085B7DC006A7926 /* LinkKitObjC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8812C8543085B7DC006A7926 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */;
+			productName = LinkKitObjC;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B926D9527F2DD4709D9493B8 /* Project object */;
 }
