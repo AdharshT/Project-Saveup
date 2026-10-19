@@ -18,15 +18,20 @@ from ..database import get_db
 
 router = APIRouter(prefix="/plaid", tags=["plaid"])
 
-configuration = plaid.Configuration(
-    host=plaid.Environment.Sandbox,
-    api_key={
-        "clientId": os.environ["PLAID_CLIENT_ID"],
-        "secret": os.environ["PLAID_SECRET"],
-    }
-)
-plaid_client = plaid_api.PlaidApi(plaid.ApiClient(configuration))
+_plaid_client: plaid_api.PlaidApi | None = None
 
+def _get_client() -> plaid_api.PlaidApi:
+    global _plaid_client
+    if _plaid_client is None:
+        config = plaid.Configuration(
+            host=plaid.Environment.Sandbox,
+            api_key={
+                "clientId": os.environ["PLAID_CLIENT_ID"],
+                "secret": os.environ["PLAID_SECRET"],
+            }
+        )
+        _plaid_client = plaid_api.PlaidApi(plaid.ApiClient(config))
+    return _plaid_client
 # In-memory token store — fine for sandbox, lost on server restart
 _access_tokens: dict[int, str] = {}
 
