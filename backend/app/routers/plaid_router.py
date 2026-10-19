@@ -32,7 +32,7 @@ def _get_client() -> plaid_api.PlaidApi:
         )
         _plaid_client = plaid_api.PlaidApi(plaid.ApiClient(config))
     return _plaid_client
-# In-memory token store — fine for sandbox, lost on server restart
+
 _access_tokens: dict[int, str] = {}
 
 
@@ -50,7 +50,7 @@ def create_link_token(user: models.User = Depends(get_current_user)):
             country_codes=[CountryCode("US")],
             language="en"
         )
-        resp = plaid_client.link_token_create(req)
+        resp = _get_client().link_token_create(req)
         return {"link_token": resp["link_token"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -62,7 +62,7 @@ def exchange_token(
     user: models.User = Depends(get_current_user),
 ):
     try:
-        resp = plaid_client.item_public_token_exchange(
+        resp = _get_client().item_public_token_exchange(
             ItemPublicTokenExchangeRequest(public_token=body.public_token)
         )
         _access_tokens[user.id] = resp["access_token"]
@@ -80,7 +80,6 @@ def sync_transactions(
     if not access_token:
         raise HTTPException(status_code=400, detail="No linked bank account. Connect a bank first.")
 
-    # Import into the user's first account
     account = db.query(models.Account).filter(models.Account.user_id == user.id).first()
     if not account:
         raise HTTPException(status_code=400, detail="Add an account in Saveup before syncing.")
@@ -88,7 +87,7 @@ def sync_transactions(
     try:
         added, cursor, has_more = [], "", True
         while has_more:
-            resp = plaid_client.transactions_sync(
+            resp = _get_client().transactions_sync(
                 TransactionsSyncRequest(access_token=access_token, cursor=cursor)
             )
             added.extend(resp["added"])
@@ -97,7 +96,7 @@ def sync_transactions(
 
         imported = 0
         for txn in added:
-            if txn["amount"] <= 0:  # Plaid: positive = debit; skip credits/refunds
+            if txn["amount"] <= 0:
                 continue
 
             txn_date = txn["date"]
