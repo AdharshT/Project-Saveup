@@ -35,6 +35,9 @@ app.include_router(transactions.router)
 app.include_router(summary.router)
 app.include_router(affordability.router)
 
+from .routers import plaid_router   # adjust path to match where you save the file
+app.include_router(plaid_router.router)
+
 
 @app.get("/health")
 def health():
