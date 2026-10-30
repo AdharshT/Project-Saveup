@@ -14,9 +14,11 @@ struct ImportTransactionsView: View {
     @State private var incomeIDs: Set<UUID> = []
     @State private var existingTransactions: [Transaction] = []
     @State private var showFilePicker = false
-    @State private var showPlaidLink = false
     @State private var isImporting = false
     @State private var errorMessage: String?
+    @State private var accountBalance = ""
+
+    private var selectedAccount: Account? { accounts.first(where: { $0.id == selectedAccountId }) ?? accounts.first }
 
     private var newCount: Int { parsedTransactions.filter { !duplicateIDs.contains($0.id) && !incomeIDs.contains($0.id) && !possibleDuplicateIDs.contains($0.id) }.count }
     private var dupCount: Int  { duplicateIDs.count }
@@ -45,9 +47,6 @@ struct ImportTransactionsView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showPlaidLink) {
-                ConnectBankView(onSync: { await onImport() })
-            }
             .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.commaSeparatedText]) { result in
                 switch result {
                 case .success(let url): Task { await loadCSV(from: url) }
@@ -56,6 +55,7 @@ struct ImportTransactionsView: View {
             }
             .task {
                 selectedAccountId = accounts.first?.id ?? -1
+                accountBalance = String(accounts.first?.balance ?? 0)
                 existingTransactions = (try? await TransactionsAPI.list()) ?? []
             }
         }
@@ -108,21 +108,13 @@ struct ImportTransactionsView: View {
                     Text(err).foregroundStyle(.red).font(.footnote).multilineTextAlignment(.center)
                 }
 
-                Button { showPlaidLink = true } label: {
-                    Label("Connect Bank with Plaid", systemImage: "building.columns")
+                Button { showFilePicker = true } label: {
+                    Label("Choose File", systemImage: "folder")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .tint(Color(red: 0.18, green: 0.48, blue: 0.31))
-
-                Button { showFilePicker = true } label: {
-                    Label("Import CSV Instead", systemImage: "folder")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .tint(Color(red: 0.22, green: 0.78, blue: 0.40))
             }
             .padding(24)
         }
@@ -137,6 +129,16 @@ struct ImportTransactionsView: View {
                     ForEach(accounts) { a in Text(a.nickname).tag(a.id) }
                 }
                 .pickerStyle(.menu)
+                .onChange(of: selectedAccountId) { _, newId in
+                    accountBalance = String(accounts.first(where: { $0.id == newId })?.balance ?? 0)
+                }
+                HStack {
+                    Text("Account Balance").foregroundStyle(.secondary)
+                    Spacer()
+                    TextField("0.00", text: $accountBalance)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                }
             }
 
             // Income / paycheck banner
@@ -316,6 +318,14 @@ struct ImportTransactionsView: View {
                     date: formatISODate(txn.date)
                 )
                 _ = try await TransactionsAPI.create(input)
+            }
+            // Update account balance if it was changed
+            if let acct = selectedAccount {
+                let newBalance = Double(accountBalance) ?? acct.balance
+                if abs(newBalance - acct.balance) > 0.001 {
+                    let balInput = AccountInput(bankId: acct.bankId, nickname: acct.nickname, type: acct.type, last4: acct.last4, balance: newBalance)
+                    _ = try? await AccountsAPI.update(id: acct.id, balInput)
+                }
             }
             await onImport()
             dismiss()

@@ -336,8 +336,13 @@ struct TransactionFormSheet: View {
     @State private var amount = ""
     @State private var category = spendingCategories[0].options[0]
     @State private var date = Date()
+    @State private var accountBalance = ""
     @State private var error: String?
     @State private var isSaving = false
+
+    private var selectedAccount: Account? {
+        accounts.first(where: { $0.id == selectedAccountId }) ?? accounts.first
+    }
 
     var body: some View {
         NavigationStack {
@@ -353,7 +358,17 @@ struct TransactionFormSheet: View {
                             }
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { selectedAccountId = a.id }
+                        .onTapGesture {
+                            selectedAccountId = a.id
+                            accountBalance = String(a.balance)
+                        }
+                    }
+                    HStack {
+                        Text("Account Balance").foregroundStyle(.secondary)
+                        Spacer()
+                        TextField("0.00", text: $accountBalance)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
                     }
                 }
                 Section {
@@ -379,6 +394,7 @@ struct TransactionFormSheet: View {
             }
             .onAppear {
                 selectedAccountId = editing?.accountId ?? accounts.first?.id ?? -1
+                accountBalance = String(selectedAccount?.balance ?? 0)
                 if let t = editing {
                     description = t.description; amount = String(t.amount)
                     category = t.category ?? spendingCategories[0].options[0]
@@ -399,6 +415,12 @@ struct TransactionFormSheet: View {
         do {
             if let t = editing { _ = try await TransactionsAPI.update(id: t.id, input) }
             else { _ = try await TransactionsAPI.create(input) }
+            // Update account balance if it was changed
+            let newBalance = Double(accountBalance) ?? acct.balance
+            if abs(newBalance - acct.balance) > 0.001 {
+                let balInput = AccountInput(bankId: acct.bankId, nickname: acct.nickname, type: acct.type, last4: acct.last4, balance: newBalance)
+                _ = try? await AccountsAPI.update(id: acct.id, balInput)
+            }
             await onSave(); dismiss()
         } catch { self.error = error.localizedDescription }
         isSaving = false
