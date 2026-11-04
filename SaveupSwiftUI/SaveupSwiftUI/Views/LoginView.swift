@@ -72,6 +72,7 @@ struct LoginView: View {
             }
             .padding(.bottom, 32)
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -112,18 +113,31 @@ struct ValidatedField: View {
     var error: String = ""
     var keyboardType: UIKeyboardType = .default
     var isSecure: Bool = false
+    @State private var isRevealed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label).font(.footnote.weight(.medium))
-            Group {
+            HStack(spacing: 0) {
+                Group {
+                    if isSecure && !isRevealed {
+                        SecureField(placeholder, text: $text)
+                    } else {
+                        TextField(placeholder, text: $text)
+                            .keyboardType(keyboardType)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+                }
                 if isSecure {
-                    SecureField(placeholder, text: $text)
-                } else {
-                    TextField(placeholder, text: $text)
-                        .keyboardType(keyboardType)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
+                    Button {
+                        isRevealed.toggle()
+                    } label: {
+                        Image(systemName: isRevealed ? "eye.slash" : "eye")
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 8)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(10)

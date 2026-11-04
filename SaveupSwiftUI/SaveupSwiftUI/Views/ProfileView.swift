@@ -48,6 +48,14 @@ struct ProfileView: View {
                 Section {
                     Button("Log Out", role: .destructive) { auth.signOut() }
                 }
+
+                Section {
+                    Text("© 2026 Adharsh Thiagarajan")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .listRowBackground(Color.clear)
             }
         }
         .listStyle(.insetGrouped)

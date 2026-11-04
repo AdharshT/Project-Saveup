@@ -53,6 +53,7 @@ struct SignUpView: View {
             }
             .padding(.bottom, 32)
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Sign Up")
         .navigationBarTitleDisplayMode(.inline)
     }

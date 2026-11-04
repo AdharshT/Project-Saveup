@@ -337,11 +337,22 @@ struct TransactionFormSheet: View {
     @State private var category = spendingCategories[0].options[0]
     @State private var date = Date()
     @State private var accountBalance = ""
+    @State private var baseBalance: Double = 0   // original balance before this transaction
     @State private var error: String?
     @State private var isSaving = false
 
     private var selectedAccount: Account? {
         accounts.first(where: { $0.id == selectedAccountId }) ?? accounts.first
+    }
+
+    private var isToday: Bool { Calendar.current.isDateInToday(date) }
+
+    private func refreshBalancePreview() {
+        if isToday, let amt = Double(amount), amt > 0 {
+            accountBalance = String(format: "%.2f", max(0, baseBalance - amt))
+        } else {
+            accountBalance = String(format: "%.2f", baseBalance)
+        }
     }
 
     var body: some View {
@@ -360,11 +371,13 @@ struct TransactionFormSheet: View {
                         .contentShape(Rectangle())
                         .onTapGesture {
                             selectedAccountId = a.id
-                            accountBalance = String(a.balance)
+                            baseBalance = a.balance
+                            refreshBalancePreview()
                         }
                     }
                     HStack {
-                        Text("Account Balance").foregroundStyle(.secondary)
+                        Text(isToday ? "Balance after purchase" : "Account Balance")
+                            .foregroundStyle(.secondary)
                         Spacer()
                         TextField("0.00", text: $accountBalance)
                             .keyboardType(.decimalPad)
@@ -373,7 +386,9 @@ struct TransactionFormSheet: View {
                 }
                 Section {
                     TextField("Description (e.g. Groceries)", text: $description)
-                    TextField("Amount", text: $amount).keyboardType(.decimalPad)
+                    TextField("Amount", text: $amount)
+                        .keyboardType(.decimalPad)
+                        .onChange(of: amount) { _, _ in refreshBalancePreview() }
                     Picker("Category", selection: $category) {
                         ForEach(spendingCategories, id: \.group) { group in
                             Section(header: Text(group.group)) {
@@ -382,11 +397,16 @@ struct TransactionFormSheet: View {
                         }
                     }
                     DatePicker("Date", selection: $date, displayedComponents: .date)
+                        .onChange(of: date) { _, _ in refreshBalancePreview() }
                 }
             }
             .navigationTitle(editing != nil ? "Edit Transaction" : "Log Spending")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+                }
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { Task { await save() } }.disabled(isSaving)
@@ -394,12 +414,13 @@ struct TransactionFormSheet: View {
             }
             .onAppear {
                 selectedAccountId = editing?.accountId ?? accounts.first?.id ?? -1
-                accountBalance = String(selectedAccount?.balance ?? 0)
+                baseBalance = selectedAccount?.balance ?? 0
                 if let t = editing {
                     description = t.description; amount = String(t.amount)
                     category = t.category ?? spendingCategories[0].options[0]
                     date = parseISODate(t.date) ?? Date()
                 }
+                refreshBalancePreview()
             }
         }
     }
@@ -415,11 +436,13 @@ struct TransactionFormSheet: View {
         do {
             if let t = editing { _ = try await TransactionsAPI.update(id: t.id, input) }
             else { _ = try await TransactionsAPI.create(input) }
-            // Update account balance if it was changed
-            let newBalance = Double(accountBalance) ?? acct.balance
-            if abs(newBalance - acct.balance) > 0.001 {
-                let balInput = AccountInput(bankId: acct.bankId, nickname: acct.nickname, type: acct.type, last4: acct.last4, balance: newBalance)
-                _ = try? await AccountsAPI.update(id: acct.id, balInput)
+            // Only update account balance for today's transactions
+            if isToday {
+                let newBalance = Double(accountBalance) ?? acct.balance
+                if abs(newBalance - acct.balance) > 0.001 {
+                    let balInput = AccountInput(bankId: acct.bankId, nickname: acct.nickname, type: acct.type, last4: acct.last4, balance: newBalance)
+                    _ = try? await AccountsAPI.update(id: acct.id, balInput)
+                }
             }
             await onSave(); dismiss()
         } catch { self.error = error.localizedDescription }
